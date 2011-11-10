@@ -180,12 +180,19 @@ public class R2RML {
 				formatter.printHelp("R2RML", options);
 				System.exit(-1);
 			} else {
-				File r2rmlFileTest = new File(r2rmlFile);
-				if (!r2rmlFileTest.exists()){
-					log.error("[R2RML:main] R2RML file does not exists.");
+				try
+				{
+					r2rmlFile = line.getOptionValue("r2rml");
+					File r2rmlFileTest = new File(r2rmlFile);
+					if (!r2rmlFileTest.exists()){
+						log.error("[R2RML:main] R2RML file does not exists.");
+						System.exit(-1);
+					}
+				}
+				catch(Exception e){
+					log.error(String.format("[R2RML:main] Error reading R2RML file '%0$s'.", r2rmlFile));
 					System.exit(-1);
 				}
-				r2rmlFile = line.getOptionValue("r2rml");
 			}
 			// Use of native store ?
 			useNativeStore = line.hasOption("n");
