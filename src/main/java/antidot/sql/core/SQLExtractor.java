@@ -64,14 +64,14 @@ public class SQLExtractor {
 	 * @param tz
 	 * @return
 	 */
-	static public Database extractMySQLDatabase(Connection conn, TimeZone tz) {
+	static public Database extractMySQLDatabase(Connection conn, TimeZone tz, String driver) {
 		Long start = System.currentTimeMillis();
 		
 		String currentTimeZone = SQLConnector.timeZoneToStr(tz);
 		Database db = null;
 		try {
-			// Check timezone
-			if (currentTimeZone == null) {
+			// Check timezone (only for MySQL)
+			if (driver.equals("com.mysql.jdbc.Driver") && (currentTimeZone == null)) {
 				if (log.isWarnEnabled()) log
 						.warn("[SQLConnector:extractMySQLDatabase] No time zone specified. Use database time zone by default.");
 				currentTimeZone = SQLConnector.getTimeZone(conn);
@@ -83,11 +83,14 @@ public class SQLExtractor {
 			HashSet<Table> tables = new HashSet<Table>();
 			ResultSet tablesSet = meta.getTables(conn.getCatalog(), null, "%",
 					null);
+			int first = 0;
 			while (tablesSet.next()) {
+				first++;
+				if (tablesSet.getString("TABLE_TYPE") == null || !tablesSet.getString("TABLE_TYPE").equals("TABLE")) continue;
 				// Extract meta-data of table
 				// Extract table name
 				String tableName = tablesSet.getString("TABLE_NAME");
-
+				if (log.isInfoEnabled()) log.info("[SQLConnection:extractDatabase] Convert table : " + tableName);
 				// Extract header
 				ResultSet columnsSet = meta.getColumns(null, null, tableName,
 						null);
@@ -178,19 +181,24 @@ public class SQLExtractor {
 				int i = 0;
 				for (String columnName : header.getColumnNames()) {
 					i++;
-					// Extract MySQL date format in a ISO 8601 format
-					SQLType.MySQLType type = SQLType.MySQLType
-							.toMySQLType(header.getDatatypes().get(columnName));
+					// Extract SQL date format in a ISO 8601 format
+					SQLType type = SQLType
+							.toSQLType(header.getDatatypes().get(columnName));
 					if (type == null) {
 						throw new IllegalStateException(
-								"[SQLConnector:extractMySQLDatabase] Unknown MySQL type : "
+								"[SQLConnector:extractMySQLDatabase] Unknown SQL type : "
 										+ header.getDatatypes().get(columnName)
 										+ " from column : " + columnName);
 					}
-					if (type.isDateType()) {
-						SQLQuery += "UNIX_TIMESTAMP(`" + columnName + "`)";
+					if (type == SQLType.UNKNOW) {
+						if (log.isWarnEnabled()) log.warn("[SQLConnector:extractMySQLDatabase] Unknown SQL type : "
+										+ header.getDatatypes().get(columnName)
+										+ " from column : " + columnName);
+					}
+					if (driver.equals("com.mysql.jdbc.Driver") && type.isDateType()) {
+						SQLQuery += "UNIX_TIMESTAMP(" + columnName + ")";
 					} else {
-						SQLQuery += "`" + columnName + "`";
+						SQLQuery +=  columnName;
 					}
 					if (i < header.getColumnNames().size())
 						SQLQuery += ", ";
@@ -205,11 +213,10 @@ public class SQLExtractor {
 					TreeMap<String, String> values = new TreeMap<String, String>();
 					for (String columnName : header.getColumnNames()) {
 						String value = null;
-						SQLType.MySQLType type = SQLType.MySQLType
-								.toMySQLType(header.getDatatypes().get(
+						SQLType type = SQLType.toSQLType(header.getDatatypes().get(
 										columnName));
-						if (type.isDateType()) {
-							SQLType.MySQLType.toMySQLType(header.getDatatypes()
+						if (driver.equals("com.mysql.jdbc.Driver") && type.isDateType()) {
+							SQLType.toSQLType(header.getDatatypes()
 									.get(columnName));
 							// Convert date into timestamp
 							value = rs.getString("UNIX_TIMESTAMP(`"
@@ -249,11 +256,11 @@ public class SQLExtractor {
 				tables.add(table);
 			}
 			db = new Database(tables);
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
 		}
+		
 		if (log.isDebugEnabled()) log.debug("[SQLConnection:extractDatabase] Database generated : " + db);
 		
 		Float stop = Float.valueOf(System.currentTimeMillis() - start) / 1000;

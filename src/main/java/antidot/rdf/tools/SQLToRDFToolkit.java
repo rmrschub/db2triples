@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import antidot.sql.type.SQLType;
-import antidot.sql.type.SQLType.MySQLType;
 import antidot.xmls.type.XSDType;
 
 public abstract class SQLToRDFToolkit {
@@ -41,62 +40,62 @@ public abstract class SQLToRDFToolkit {
 	 * to XML Schema Part 2: Datatypes Second Edition (W3C Recommendation 28
 	 * October 2004) See : http://www.w3.org/TR/xmlschema-2/
 	 */
-	private static Map<SQLType.MySQLType, XSDType> equivalentTypes = new HashMap<SQLType.MySQLType, XSDType>();
+	private static Map<SQLType, XSDType> equivalentTypes = new HashMap<SQLType, XSDType>();
 	
 	static {
 		// Text types
-		equivalentTypes.put(MySQLType.CHAR, XSDType.STRING); // A fixed
+		equivalentTypes.put(SQLType.CHAR, XSDType.STRING); // A fixed
 		// section
 		// from
 		// 0 to
 		// 255
 		// characters long.
-		equivalentTypes.put(MySQLType.VARCHAR, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.VARCHAR, XSDType.STRING); // A
 		// variable
 		// section
 		// from
 		// 0
 		// to 255 characters long.
-		equivalentTypes.put(MySQLType.TINYTEXT, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.TINYTEXT, XSDType.STRING); // A
 		// string
 		// with
 		// a
 		// maximum
 		// length of 255 characters.
-		equivalentTypes.put(MySQLType.TEXT, XSDType.STRING); // A string
+		equivalentTypes.put(SQLType.TEXT, XSDType.STRING); // A string
 		// with
 		// a
 		// maximum
 		// length
 		// of 65535 characters.
-		equivalentTypes.put(MySQLType.BLOB, XSDType.STRING); // A string
+		equivalentTypes.put(SQLType.BLOB, XSDType.STRING); // A string
 		// with
 		// a
 		// maximum
 		// length
 		// of 65535 characters.
-		equivalentTypes.put(MySQLType.MEDIUMTEXT, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.MEDIUMTEXT, XSDType.STRING); // A
 		// string
 		// with
 		// a
 		// maximum
 		// length of 16777215
 		// characters.
-		equivalentTypes.put(MySQLType.MEDIUMBLOB, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.MEDIUMBLOB, XSDType.STRING); // A
 		// string
 		// with
 		// a
 		// maximum
 		// length of 16777215
 		// characters.
-		equivalentTypes.put(MySQLType.LONGTEXT, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.LONGTEXT, XSDType.STRING); // A
 		// string
 		// with
 		// a
 		// maximum
 		// length of 4294967295
 		// characters.
-		equivalentTypes.put(MySQLType.LONGBLOB, XSDType.STRING); // A
+		equivalentTypes.put(SQLType.LONGBLOB, XSDType.STRING); // A
 		// string
 		// with
 		// a
@@ -105,83 +104,83 @@ public abstract class SQLToRDFToolkit {
 		// characters.
 
 		// Number types
-		equivalentTypes.put(MySQLType.BIT, XSDType.BYTE); // 0 or 1
-		equivalentTypes.put(MySQLType.TINYINT, XSDType.BYTE); // -128 to
+		equivalentTypes.put(SQLType.BIT, XSDType.BYTE); // 0 or 1
+		equivalentTypes.put(SQLType.TINYINT, XSDType.BYTE); // -128 to
 		// 127
 		// normal
-		equivalentTypes.put(MySQLType.UNSIGNED_TINYINT, XSDType.UNSIGNED_BYTE); // 0
+		equivalentTypes.put(SQLType.UNSIGNED_TINYINT, XSDType.UNSIGNED_BYTE); // 0
 																				// to
 																				// 255
 		// UNSIGNED.
-		equivalentTypes.put(MySQLType.SMALLINT, XSDType.SHORT); // -32768
+		equivalentTypes.put(SQLType.SMALLINT, XSDType.SHORT); // -32768
 		// to
 		// 32767
 		// normal
 		equivalentTypes
-				.put(MySQLType.UNSIGNED_SMALLINT, XSDType.UNSIGNED_SHORT); // 0
+				.put(SQLType.UNSIGNED_SMALLINT, XSDType.UNSIGNED_SHORT); // 0
 																			// to
 																			// 65535
 		// UNSIGNED.
-		equivalentTypes.put(MySQLType.MEDIUMINT, XSDType.INT); // -8388608
+		equivalentTypes.put(SQLType.MEDIUMINT, XSDType.INT); // -8388608
 		// to
 		// 8388607
 		// normal.
 		// // TODO : find another
 		// equivalent ?
-		equivalentTypes.put(MySQLType.UNSIGNED_MEDIUMINT, XSDType.INT); // 0
+		equivalentTypes.put(SQLType.UNSIGNED_MEDIUMINT, XSDType.INT); // 0
 		// to
 		// 16777215
 		// UNSIGNED. // TODO
 		// : find another
 		// equivalent ?
-		equivalentTypes.put(MySQLType.INT, XSDType.INT); // -2147483648
+		equivalentTypes.put(SQLType.INT, XSDType.INT); // -2147483648
 		// to
 		// 2147483647
 		// normal.
-		equivalentTypes.put(MySQLType.UNSIGNED_INT, XSDType.UNSIGNED_INT); // 0
+		equivalentTypes.put(SQLType.UNSIGNED_INT, XSDType.UNSIGNED_INT); // 0
 																			// to
 																			// 4294967295
 		// UNSIGNED.
-		equivalentTypes.put(MySQLType.BIGINT, XSDType.LONG); // -9223372036854775808
+		equivalentTypes.put(SQLType.BIGINT, XSDType.LONG); // -9223372036854775808
 		// to
 		// 9223372036854775807 normal.
-		equivalentTypes.put(MySQLType.UNSIGNED_BIGINT, XSDType.UNSIGNED_LONG); // 0
+		equivalentTypes.put(SQLType.UNSIGNED_BIGINT, XSDType.UNSIGNED_LONG); // 0
 																				// to
 		// 18446744073709551615
 		// UNSIGNED.
-		equivalentTypes.put(MySQLType.FLOAT, XSDType.FLOAT); // A small
+		equivalentTypes.put(SQLType.FLOAT, XSDType.FLOAT); // A small
 		// number
 		// with
 		// a
 		// floating
 		// decimal point.
-		equivalentTypes.put(MySQLType.UNSIGNED_FLOAT, XSDType.FLOAT); // A
+		equivalentTypes.put(SQLType.UNSIGNED_FLOAT, XSDType.FLOAT); // A
 		// small
 		// number
 		// with
 		// a
 		// floating
 		// decimal point.
-		equivalentTypes.put(MySQLType.DOUBLE, XSDType.DOUBLE); // A
+		equivalentTypes.put(SQLType.DOUBLE, XSDType.DOUBLE); // A
 		// small
 		// number
 		// with
 		// a
 		// floating
 		// decimal point.
-		equivalentTypes.put(MySQLType.UNSIGNED_DOUBLE, XSDType.DOUBLE); // A
+		equivalentTypes.put(SQLType.UNSIGNED_DOUBLE, XSDType.DOUBLE); // A
 		// large
 		// number
 		// with
 		// a
 		// floating decimal point.
-		equivalentTypes.put(MySQLType.DECIMAL, XSDType.DECIMAL); // A
+		equivalentTypes.put(SQLType.DECIMAL, XSDType.DECIMAL); // A
 		// large
 		// number
 		// with
 		// a
 		// floating decimal point.
-		equivalentTypes.put(MySQLType.UNSIGNED_DECIMAL, XSDType.DECIMAL); // A
+		equivalentTypes.put(SQLType.UNSIGNED_DECIMAL, XSDType.DECIMAL); // A
 		// DOUBLE
 		// stored
 		// as
@@ -190,53 +189,98 @@ public abstract class SQLToRDFToolkit {
 		// fixed decimal point.
 
 		// Date types
-		equivalentTypes.put(MySQLType.DATE, XSDType.DATE); // YYYY-MM-DD
+		equivalentTypes.put(SQLType.DATE, XSDType.DATE); // YYYY-MM-DD
 		// ("1000-01-01"
 		// -
 		// "9999-12-31").
-		equivalentTypes.put(MySQLType.DATETIME, XSDType.DATETIME); // YYYY-MM-DD
+		equivalentTypes.put(SQLType.DATETIME, XSDType.DATETIME); // YYYY-MM-DD
 		// HH:MM:SS
 		// ("1000-01-01 00:00:00" - "9999-12-31 23:59:59").
 		// xsd:datetime doesn't match because the letter T is required ?
 		// No, it's valid. See W3C Working Draft (24/03/2011), Section 2.3.4.
-		equivalentTypes.put(MySQLType.TIMESTAMP, XSDType.DATETIME); // YYYYMMDDHHMMSS
+		equivalentTypes.put(SQLType.TIMESTAMP, XSDType.DATETIME); // YYYYMMDDHHMMSS
 		// (19700101000000 - 2037+).
 		// TODO : equivalent ?
-		equivalentTypes.put(MySQLType.TIME, XSDType.TIME); // HH:MM:SS
+		equivalentTypes.put(SQLType.TIME, XSDType.TIME); // HH:MM:SS
 		// ("-838:59:59"
 		// -
 		// "838:59:59").
-		equivalentTypes.put(MySQLType.YEAR, XSDType.GYEAR); // YYYY
+		equivalentTypes.put(SQLType.YEAR, XSDType.GYEAR); // YYYY
 		// (1900 -
 		// 2155).
 
 		// Misc types
 		// TODO : equivalent ?
-		equivalentTypes.put(MySQLType.ENUM, XSDType.ENUMERATION); // Short
+		equivalentTypes.put(SQLType.ENUM, XSDType.ENUMERATION); // Short
 		// for
 		// ENUMERATION which
 		// means
 		// that each column may have one of
 		// a specified possible values.
-		equivalentTypes.put(MySQLType.SET, XSDType.ENUMERATION); // Similar
+		equivalentTypes.put(SQLType.SET, XSDType.ENUMERATION); // Similar
 		// to
 		// ENUM
 		// except each
 		// column
 		// may have more than one of the
 		// specified possible values.
+		
+		/**
+		 * PostGreSQL equivalences.
+		 */
+		
+		equivalentTypes.put(SQLType.INT4, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.FLOAT4, XSDType.FLOAT);
+		equivalentTypes.put(SQLType.POINT, XSDType.STRING);
+		equivalentTypes.put(SQLType.BIGSERIAL, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.VARBIT, XSDType.INT);
+		equivalentTypes.put(SQLType.BIT_VARYING, XSDType.INT);
+		equivalentTypes.put(SQLType.BOOL, XSDType.BYTE);
+		equivalentTypes.put(SQLType.BPCHAR, XSDType.STRING);
+		equivalentTypes.put(SQLType.BOOLEAN, XSDType.BYTE);
+		equivalentTypes.put(SQLType.BOX, XSDType.STRING);
+		equivalentTypes.put(SQLType.BYTEA, XSDType.STRING);
+		equivalentTypes.put(SQLType.CHARACTER_VARYING, XSDType.STRING);
+		equivalentTypes.put(SQLType.CHARACTER, XSDType.STRING);
+		equivalentTypes.put(SQLType.CIDR, XSDType.STRING);
+		equivalentTypes.put(SQLType.CIRCLE, XSDType.STRING);
+		equivalentTypes.put(SQLType.DOUBLE_PRECISION, XSDType.DOUBLE);
+		equivalentTypes.put(SQLType.FLOAT8, XSDType.FLOAT);
+		equivalentTypes.put(SQLType.INET, XSDType.STRING);
+		equivalentTypes.put(SQLType.INT2, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.INT8, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.INTERVAL, XSDType.STRING);
+		equivalentTypes.put(SQLType.LINE, XSDType.STRING);
+		equivalentTypes.put(SQLType.LSEG, XSDType.STRING);
+		equivalentTypes.put(SQLType.MACADDR, XSDType.STRING);
+		equivalentTypes.put(SQLType.MONEY, XSDType.STRING);
+		equivalentTypes.put(SQLType.NUMERIC, XSDType.DECIMAL);
+		equivalentTypes.put(SQLType.PATH, XSDType.STRING);
+		equivalentTypes.put(SQLType.POINT, XSDType.STRING);
+		equivalentTypes.put(SQLType.POLYGON, XSDType.STRING);
+		equivalentTypes.put(SQLType.REAL, XSDType.FLOAT);
+		equivalentTypes.put(SQLType.SERIAL, XSDType.STRING);
+		equivalentTypes.put(SQLType.SERIAL4, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.TIMETZ, XSDType.FLOAT);
+		equivalentTypes.put(SQLType.TIMESTAMPTZ, XSDType.STRING);
+		equivalentTypes.put(SQLType.POLYGON, XSDType.INTEGER);
+		equivalentTypes.put(SQLType.REAL, XSDType.FLOAT);
+		equivalentTypes.put(SQLType.SERIAL, XSDType.STRING);
+		
+		
+		equivalentTypes.put(SQLType.UNKNOW, XSDType.STRING);
 	}
 	
-	public static XSDType getEquivalentType(MySQLType mySQLType){
-		return equivalentTypes.get(mySQLType);
+	public static XSDType getEquivalentType(SQLType SQLType){
+		return equivalentTypes.get(SQLType);
 	}
 	
-	public static XSDType getEquivalentType(String mySQLType){
-		return equivalentTypes.get(SQLType.MySQLType.toMySQLType(mySQLType));
+	public static XSDType getEquivalentType(String sqlType){
+		return equivalentTypes.get(SQLType.toSQLType(sqlType));
 	}
 	
 	public static boolean isValidSQLDatatype(String datatype){
-		return equivalentTypes.keySet().contains(SQLType.MySQLType.toMySQLType(datatype));
+		return equivalentTypes.keySet().contains(SQLType.toSQLType(datatype));
 	}
 
 }

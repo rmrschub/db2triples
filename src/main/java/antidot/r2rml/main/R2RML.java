@@ -53,62 +53,56 @@ public class R2RML {
 	// Log
 	private static Log log = LogFactory.getLog(R2RML.class);
 
-	private static Option userNameOpt = OptionBuilder.withArgName("userName")
-			.hasArg().withDescription("Database user name").withLongOpt(
-					"userName").create("user");
+	private static Option userNameOpt = OptionBuilder.withArgName("user_name")
+			.hasArg().withDescription("Database user name").withLongOpt("user")
+			.create("u");
 
 	private static Option passwordOpt = OptionBuilder.withArgName("password")
-			.hasArg().withDescription("Database password").withLongOpt(
-					"password").create("pass");
+			.hasArg().withDescription("Database password").withLongOpt("pass")
+			.create("p");
 
-	private static Option URLOpt = OptionBuilder.withArgName("URL").hasArg()
+	private static Option URLOpt = OptionBuilder.withArgName("url").hasArg()
 			.withDescription(
-					"URL of database (default : jdbc:mysql://localhost/)")
-			.withLongOpt("URL").create("url");
+					"Database URL (default : jdbc:mysql://localhost/)")
+			.withLongOpt("url").create("l");
 
 	private static Option driverOpt = OptionBuilder.withArgName("driver")
 			.hasArg().withDescription(
 					"Driver to use (default : com.mysql.jdbc.Driver)")
-			.withLongOpt("driver").create("driver");
+			.withLongOpt("driver").create("d");
 
-	private static Option dbOpt = OptionBuilder.withArgName("databaseName")
-			.hasArg().withDescription("database name").withLongOpt(
-					"databaseName").create("db");
+	private static Option dbOpt = OptionBuilder.withArgName("database_name")
+			.hasArg().withDescription("Database name").withLongOpt("database")
+			.create("b");
 
 	private static Option forceOpt = new Option("f",
 			"Force loading of existing repository (without remove data)");
-	
+
 	private static Option removeOpt = new Option("r",
-	"Force removing of old output file");
+			"Force removing of old output file");
 
 	private static Option nativeOpt = new Option("n",
 			"Use native store (store in output directory path)");
 
 	private static Option nativeStoreNameOpt = OptionBuilder.withArgName(
 			"native_output").hasArg().withDescription(
-			"native store output directory").withLongOpt("nativeOutput")
-			.create("nativeout");
+			"Native store output directory").withLongOpt("native_output")
+			.create("n");
 
 	private static Option outputOpt = OptionBuilder.withArgName("output")
-			.hasArg().withDescription("output (default : output)").withLongOpt(
-					"output").create("out");
-	
-	private static Option r2rmlFileOpt = OptionBuilder.withArgName("r2rml")
-	.hasArg().withDescription(
-			"r2ml instance").withLongOpt(
-			"r2rml").create("r2rml");
+			.hasArg().withDescription("Output RDF filename (default : output)")
+			.withLongOpt("output").create("o");
 
-	// Database settings
-//	private static String userName = "root";
-//	private static String password = "root";
-//	private static String url = "jdbc:mysql://localhost/";
-//	private static String driver = "com.mysql.jdbc.Driver";
+	private static Option r2rmlFileOpt = OptionBuilder.withArgName("r2rml")
+			.hasArg().withDescription("R2RML configuration file").withLongOpt(
+					"r2rml").create("c");
+
+	private static String projectName = "R2RML - db2triples v0.9 - See https://github.com/antidot/db2triples for more informations.";
 
 	public static void main(String[] args) {
 
 		// Get all options
 		Options options = new Options();
-
 		options.addOption(userNameOpt);
 		options.addOption(passwordOpt);
 		options.addOption(URLOpt);
@@ -120,7 +114,7 @@ public class R2RML {
 		options.addOption(outputOpt);
 		options.addOption(r2rmlFileOpt);
 		options.addOption(removeOpt);
-		
+
 		// Init parameters
 		String userName = null;
 		String password = null;
@@ -133,7 +127,6 @@ public class R2RML {
 		boolean forceRemovingOld = false;
 		String nativeOutput = null;
 		String output = null;
-		
 
 		// Option parsing
 		// Create the parser
@@ -143,67 +136,79 @@ public class R2RML {
 			CommandLine line = parser.parse(options, args);
 			// Database settings
 			// user name
-			if (!line.hasOption("userName")) {
+			if (!line.hasOption("user")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("User name is required. Use -u option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("R2RML", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				userName = line.getOptionValue("userName");
+				userName = line.getOptionValue("user");
 			}
 			// password
-			if (!line.hasOption("password")) {
+			if (!line.hasOption("pass")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("Password is required. Use -p option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("R2RML", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				password = line.getOptionValue("password");
+				password = line.getOptionValue("pass");
 			}
 			// Database URL
-			url = line.getOptionValue("URL", "jdbc:mysql://localhost/");
+			url = line.getOptionValue("url", "jdbc:mysql://localhost/");
 			// driver
 			driver = line.getOptionValue("driver", "com.mysql.jdbc.Driver");
 			// Database name
-			if (!line.hasOption("databaseName")) {
+			if (!line.hasOption("database")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("Database name is required. Use -b option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("R2RML", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				dbName = line.getOptionValue("databaseName");
+				dbName = line.getOptionValue("database");
 			}
 			// r2rml instance
 			if (!line.hasOption("r2rml")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("R2RML configuration file is required. Use -r option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("R2RML", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				try
-				{
+				try {
 					r2rmlFile = line.getOptionValue("r2rml");
 					File r2rmlFileTest = new File(r2rmlFile);
-					if (!r2rmlFileTest.exists()){
+					if (!r2rmlFileTest.exists()) {
 						log.error("[R2RML:main] R2RML file does not exists.");
 						System.exit(-1);
 					}
-				}
-				catch(Exception e){
-					log.error(String.format("[R2RML:main] Error reading R2RML file '%0$s'.", r2rmlFile));
+				} catch (Exception e) {
+					log.error(String.format(
+							"[R2RML:main] Error reading R2RML file '%0$s'.",
+							r2rmlFile));
 					System.exit(-1);
 				}
 			}
 			// Use of native store ?
 			useNativeStore = line.hasOption("n");
 			// Name of native store
-			if (useNativeStore && !line.hasOption("nativeOutput")) {
+			if (useNativeStore && !line.hasOption("native_output")) {
 				// automatically generate the help statement
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("DirectMapping", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				nativeOutput = line.getOptionValue("nativeOutput");
+				nativeOutput = line.getOptionValue("native_output");
 			}
 			// Force loading of repository
 			forceExistingRep = line.hasOption("f");
@@ -211,14 +216,13 @@ public class R2RML {
 			forceRemovingOld = line.hasOption("r");
 			// Output
 			output = line.getOptionValue("output", "output.n3");
-		
 
 		} catch (ParseException exp) {
 			// oops, something went wrong
 			log.error("[DirectMapping:main] Parsing failed. Reason : "
 					+ exp.getMessage());
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("DirectMapping", options);
+			formatter.printHelp(projectName, options);
 			System.exit(-1);
 		}
 
@@ -233,37 +237,28 @@ public class R2RML {
 				File pathToNativeOutputDir = new File(nativeOutput);
 				if (pathToNativeOutputDir.exists() && !forceExistingRep) {
 					if (log.isErrorEnabled())
-						log
-								.error("Directory "
-										+ pathToNativeOutputDir
-										+ "  already exists. Use -f" +
-												" option to force loading of " +
-												"existing repository.");
+						log.error("Directory " + pathToNativeOutputDir
+								+ "  already exists. Use -f"
+								+ " option to force loading of "
+								+ "existing repository.");
 				}
-				R2RMLMapper.convertMySQLDatabase(conn,
-						r2rmlFile,
-						nativeOutput);
+				R2RMLMapper.convertMySQLDatabase(conn, r2rmlFile, nativeOutput);
 			} else {
 				File outputFile = new File(output);
 				if (outputFile.exists() && !forceRemovingOld) {
 					if (log.isErrorEnabled())
-						log
-								.error("Output file "
-										+ outputFile.getAbsolutePath()
-										+ " already exists. Please remove it or " +
-												"modify ouput name option.");
+						log.error("Output file " + outputFile.getAbsolutePath()
+								+ " already exists. Please remove it or "
+								+ "modify ouput name option.");
 					System.exit(-1);
 				} else {
 					if (log.isInfoEnabled())
-						log
-								.info("Output file "
-										+ outputFile.getAbsolutePath()
-										+ " already exists. It will be removed" +
-												" during operation (option -r)..");
+						log.info("Output file " + outputFile.getAbsolutePath()
+								+ " already exists. It will be removed"
+								+ " during operation (option -r)..");
 				}
 				SesameDataSet sesameDataSet = R2RMLMapper.convertMySQLDatabase(
-						conn, r2rmlFile,
-						nativeOutput);
+						conn, r2rmlFile, nativeOutput);
 				// Dump graph
 				sesameDataSet.dumpRDF(output, RDFFormat.N3);
 			}

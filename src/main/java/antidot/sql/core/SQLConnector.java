@@ -169,7 +169,7 @@ public abstract class SQLConnector {
 	 * @param timestamp
 	 * @param timeZone
 	 */
-	public static String dateFormatToDate(SQLType.MySQLType mySQLType,
+	public static String dateFormatToDate(SQLType mySQLType,
 			Long timestamp, String timeZone) {
 		if (log.isDebugEnabled()) log.debug("[SQLConnector:dateFormatToDate] mySQLType : " + mySQLType
 				+ " timestamp : " + timestamp);

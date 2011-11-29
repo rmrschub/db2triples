@@ -73,7 +73,7 @@ public class DirectMappingTools {
 		try {
 			conn = SQLConnector.connect(userName, password, url, driver, dbName);
 			// Extract database model
-			Database db = SQLExtractor.extractMySQLDatabase(conn, null);
+			Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
 			// Generate RDF graph
 			SesameDataSet g = DirectMapper.generateDirectMapping(db, baseURI);
 			// Return N3 string

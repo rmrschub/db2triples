@@ -55,66 +55,68 @@ public class DirectMapping {
 	// Log
 	private static Log log = LogFactory.getLog(DirectMapping.class);
 
-	private static Option userNameOpt = OptionBuilder.withArgName("userName")
+	private static Option userNameOpt = OptionBuilder.withArgName("user_name")
 			.hasArg().withDescription("Database user name").withLongOpt(
-					"userName").create("user");
+					"user").create("u");
 
 	private static Option passwordOpt = OptionBuilder.withArgName("password")
 			.hasArg().withDescription("Database password").withLongOpt(
-					"password").create("pass");
+					"pass").create("p");
 
-	private static Option URLOpt = OptionBuilder.withArgName("URL").hasArg()
+	private static Option URLOpt = OptionBuilder.withArgName("url").hasArg()
 			.withDescription(
-					"URL of database (default : jdbc:mysql://localhost/)")
-			.withLongOpt("URL").create("url");
+					"Database URL (default : jdbc:mysql://localhost/)")
+			.withLongOpt("url").create("l");
 
 	private static Option driverOpt = OptionBuilder.withArgName("driver")
 			.hasArg().withDescription(
 					"Driver to use (default : com.mysql.jdbc.Driver)")
-			.withLongOpt("driver").create("driver");
+			.withLongOpt("driver").create("d");
 
-	private static Option dbOpt = OptionBuilder.withArgName("databaseName")
+	private static Option dbOpt = OptionBuilder.withArgName("database_name")
 			.hasArg().withDescription("database name").withLongOpt(
-					"databaseName").create("db");
+					"database").create("b");
 
-	private static Option baseURIOpt = OptionBuilder.withArgName("baseURI")
+	private static Option baseURIOpt = OptionBuilder.withArgName("base_uri")
 			.hasArg().withDescription(
-					"base URI (default : http://foo.example/DB/)").withLongOpt(
-					"baseURI").create("baseURI");
+					"Base URI (default : http://foo.example/DB/)").withLongOpt(
+					"base_uri").create("i");
 
 	private static Option nativeOpt = new Option("n",
 			"Use native store (store in output directory path)");
 
 	private static Option nativeStoreNameOpt = OptionBuilder.withArgName(
-			"native_output").hasArg().withDescription(
-			"native store output directory").withLongOpt("nativeOutput")
-			.create("nativeout");
+			"nativeOutput").hasArg().withDescription(
+			"Native store output directory").withLongOpt("native_output")
+			.create("n");
 
 	private static Option forceOpt = new Option("f",
 			"Force loading of existing repository (without remove data)");
 
 	private static Option outputOpt = OptionBuilder.withArgName("output")
-			.hasArg().withDescription("output (default : output)").withLongOpt(
-					"output").create("out");
+			.hasArg().withDescription("Output RDF filename (default : output)").withLongOpt(
+					"output").create("o");
 
 	private static Option transformSPARQLFile = OptionBuilder.withArgName(
 			"sparql").hasArg().withDescription(
-			"sparql transform request file (optionnal)").withLongOpt("sparql")
-			.create("sparql");
+			"Sparql transform request file (optionnal)").withLongOpt("sparql")
+			.create("s");
 
 	private static Option transformOutputFile = OptionBuilder
-			.withArgName("outputSparql")
+			.withArgName("sparql_output")
 			.hasArg()
 			.withDescription(
-					"transformed graph output file (optionnal if sparql option is not specified, default : sparql_output otherwise)")
-			.withLongOpt("sparqlOutput").create("sparqlout");
+					"Transformed graph output file (optionnal if sparql option is not specified, default : sparql_output otherwise)")
+			.withLongOpt("sparql_output").create("q");
 
 	private static Option rdfFormat = OptionBuilder
 			.withArgName("format")
 			.hasArg()
 			.withDescription(
 					"RDF syntax output format ('RDFXML', 'N3', 'NTRIPLES' or 'TURTLE')")
-			.withLongOpt("format").create("format");
+			.withLongOpt("format").create("m");
+	
+	private static String projectName = "Direct Mapping - db2triples v0.9 - See https://github.com/antidot/db2triples for more informations.";
 
 	public static void main(String[] args) {
 		// Get all options
@@ -159,48 +161,60 @@ public class DirectMapping {
 			CommandLine line = parser.parse(options, args);
 			// Database settings
 			// user name
-			if (!line.hasOption("userName")) {
+			if (!line.hasOption("user")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("User name is required. Use -u option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("DirectMapping", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				userName = line.getOptionValue("userName");
+				userName = line.getOptionValue("user");
 			}
 			// password
-			if (!line.hasOption("password")) {
+			if (!line.hasOption("pass")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("Password is required. Use -p option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("DirectMapping", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				password = line.getOptionValue("password");
+				password = line.getOptionValue("pass");
 			}
 			// Database URL
-			url = line.getOptionValue("URL", "jdbc:mysql://localhost/");
+			url = line.getOptionValue("url", "jdbc:mysql://localhost/");
 			// driver
 			driver = line.getOptionValue("driver", "com.mysql.jdbc.Driver");
 			// Database name
-			if (!line.hasOption("databaseName")) {
+			if (!line.hasOption("database")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("Database name is required. Use -b option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("DirectMapping", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				dbName = line.getOptionValue("databaseName");
+				dbName = line.getOptionValue("database");
 			}
 			// Base URI
-			baseURI = line.getOptionValue("baseURI", "http://foo.example/DB/");
+			baseURI = line.getOptionValue("base_uri", "http://foo.example/DB/");
 			// Use of native store ?
 			useNativeStore = line.hasOption("n");
 			// Name of native store
-			if (useNativeStore && !line.hasOption("nativeOutput")) {
+			if (useNativeStore && !line.hasOption("native_output")) {
 				// automatically generate the help statement
+				if (log.isErrorEnabled())
+					log
+							.error("Native triplestore path is required. Use -n option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp("DirectMapping", options);
+				formatter.printHelp(projectName, options);
 				System.exit(-1);
 			} else {
-				nativeOutput = line.getOptionValue("nativeOutput");
+				nativeOutput = line.getOptionValue("native_output");
 			}
 			// Force loading of repository
 			forceExistingRep = line.hasOption("f");
@@ -209,7 +223,7 @@ public class DirectMapping {
 			// SPARQL transformation
 			if (line.hasOption("sparql")) {
 				sparql = line.getOptionValue("sparql");
-				sparqlOutput = line.getOptionValue("sparqlOutput",
+				sparqlOutput = line.getOptionValue("sparql_output",
 						"output_sparql.n3");
 			}
 			// RDF Format
@@ -234,7 +248,7 @@ public class DirectMapping {
 			log.error("[DirectMapping:main] Parsing failed. Reason : "
 					+ exp.getMessage());
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("DirectMapping", options);
+			formatter.printHelp(projectName, options);
 			System.exit(-1);
 		}
 
@@ -244,8 +258,7 @@ public class DirectMapping {
 			// Connect database
 			conn = SQLConnector
 					.connect(userName, password, url, driver, dbName);
-			// Extract database model
-			Database db = SQLExtractor.extractMySQLDatabase(conn, null);
+			
 			// Generate RDF graph
 			SesameDataSet g = null;
 			// Check nature of storage (memory by default)
@@ -259,6 +272,8 @@ public class DirectMapping {
 										+ "  already exists. Use -f option to force loading of existing repository.");
 					System.exit(-1);
 				}
+				// Extract database model
+				Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
 				g = DirectMapper.generateDirectMapping(db, baseURI,
 						nativeOutput);
 			} else {
@@ -271,6 +286,8 @@ public class DirectMapping {
 										+ " already exists. Please remove it or modify ouput name option.");
 					System.exit(-1);
 				}
+				// Extract database model
+				Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
 				g = DirectMapper.generateDirectMapping(db, baseURI);
 				// Dump graph
 				g.dumpRDF(output, rdfFormat);

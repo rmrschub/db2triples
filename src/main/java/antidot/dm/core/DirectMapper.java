@@ -240,7 +240,7 @@ public class DirectMapper {
 			log.debug("[DirectMapper:convertTable] Table : " + t);
 		// Check BLOB types
 		for (String column : t.getHeader().getDatatypes().keySet()) {
-			SQLType.MySQLType type = SQLType.MySQLType.toMySQLType(t
+			SQLType type = SQLType.toSQLType(t
 					.getHeader().getDatatypes().get(column));
 			if (type.isBlobType())
 				if (log.isWarnEnabled())
@@ -460,7 +460,7 @@ public class DirectMapper {
 			return null;
 		}
 		XSDType type = null;
-		SQLType.MySQLType mySQLType = SQLType.MySQLType.toMySQLType(d);
+		SQLType mySQLType = SQLType.toSQLType(d);
 		if (mySQLType.isBlobType()) {
 			if (log.isDebugEnabled())
 				log
@@ -476,7 +476,7 @@ public class DirectMapper {
 			if (type == null)
 				throw new IllegalStateException(
 						"[DirectMapper:convertLex] Unknown XSD equivalent type of : "
-								+ SQLType.MySQLType.toMySQLType(d)
+								+ SQLType.toSQLType(d)
 								+ " in column : " + columnName + " in table : "
 								+ r.getParentTableName());
 		}
