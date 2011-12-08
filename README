@@ -8,6 +8,12 @@ References : W3C Working Drafts 24 March 2011
 - A Direct Mapping of Relational Data to RDF (http://www.w3.org/TR/2011/WD-rdb-direct-mapping-20110324/)
 
 
+Roadmap:
+========
+- Include support for last calls
+- Include support for cursor-based retrieval (improve memory use)
+Target date: Q1 2012
+
 Using the library
 =================
 
@@ -66,5 +72,4 @@ java -cp target/dependency/*.jar:target/db2triples-<version number>.jar <main fu
 Contacts
 ========
 
-Lead developer : Julien Homo - jhomo@antidot.net
-Maven packaging, Git admin : Laurent Mazuel - lmazuel@antidot.net 
+opensource@antidot.net

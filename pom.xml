@@ -55,11 +55,11 @@
     </dependency>
   </dependencies>
   
-  <url>https://github.com/jhomo/db2triples</url>
+  <url>https://github.com/antidot/db2triples</url>
   <developers>
   	<developer>
-  		<name>Julien Homo</name>
-  		<email>jhomo@antidot.net</email>
+  		<name>Antidot OpenSource team</name>
+  		<email>opensource@antidot.net</email>
   		<organization>Antidot</organization>
   		<organizationUrl>http://antidot.net</organizationUrl>
   		<roles>
