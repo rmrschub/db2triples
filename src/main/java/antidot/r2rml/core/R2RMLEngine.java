@@ -366,8 +366,8 @@ public class R2RMLEngine {
 			for (int i = 1; i <= meta.getColumnCount(); i++) {
 				if (meta.getColumnName(i).equals(column)) {
 					String t = meta.getColumnTypeName(i);
-					if (SQLToRDFToolkit.isValidSQLDatatype(t))
-						datatype = SQLToRDFToolkit.getEquivalentType(t);
+					if (SQLToRDFToolkit.isValidSQLSpecificDatatype(t))
+						datatype = SQLToRDFToolkit.getEquivalentSpecificType(t);
 					else
 						return null;
 				}

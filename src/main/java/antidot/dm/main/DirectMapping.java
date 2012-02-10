@@ -22,7 +22,6 @@
  *
  * Interface between user and console.
  * 
- * @author jhomo
  *
  */
 package antidot.dm.main;
@@ -44,16 +43,18 @@ import org.apache.commons.logging.LogFactory;
 import org.openrdf.rio.RDFFormat;
 
 import antidot.dm.core.DirectMapper;
+import antidot.dm.core.DirectMappingEngine.Version;
 import antidot.rdf.impl.sesame.SesameDataSet;
 import antidot.sql.core.SQLConnector;
-import antidot.sql.core.SQLExtractor;
-import antidot.sql.model.Database;
 
 @SuppressWarnings("static-access")
 public class DirectMapping {
 
 	// Log
 	private static Log log = LogFactory.getLog(DirectMapping.class);
+	
+	private static String MYSQL_DRIVER = "com.mysql.jdbc.Driver";
+	private static String POSTGRE_DRIVER = "org.postgresql.Driver";
 
 	private static Option userNameOpt = OptionBuilder.withArgName("user_name")
 			.hasArg().withDescription("Database user name").withLongOpt(
@@ -70,8 +71,13 @@ public class DirectMapping {
 
 	private static Option driverOpt = OptionBuilder.withArgName("driver")
 			.hasArg().withDescription(
-					"Driver to use (default : com.mysql.jdbc.Driver)")
+					"Driver to use (default : " + MYSQL_DRIVER + " )")
 			.withLongOpt("driver").create("d");
+	
+	private static Option versionOpt = OptionBuilder.withArgName("version")
+	.hasArg().withDescription(
+			"Version of norm to use (1 = Working Draft 20 September 2011 (default), 2 = Working Draft 23 March 2011)")
+	.withLongOpt("version").create("v");
 
 	private static Option dbOpt = OptionBuilder.withArgName("database_name")
 			.hasArg().withDescription("database name").withLongOpt(
@@ -134,7 +140,8 @@ public class DirectMapping {
 		options.addOption(transformSPARQLFile);
 		options.addOption(transformOutputFile);
 		options.addOption(rdfFormat);
-
+		options.addOption(versionOpt);
+		
 		// Init parameters
 		String userName = null;
 		String password = null;
@@ -149,9 +156,12 @@ public class DirectMapping {
 		String sparql = null;
 		String sparqlOutput = null;
 		String format = null;
+		int int_version = 1;
 
 		// RDF Format output
 		RDFFormat rdfFormat = RDFFormat.N3; // N3 by default
+		// Norm version
+		Version version = Version.WD_20110920;
 
 		// Option parsing
 		// Create the parser
@@ -187,7 +197,7 @@ public class DirectMapping {
 			// Database URL
 			url = line.getOptionValue("url", "jdbc:mysql://localhost/");
 			// driver
-			driver = line.getOptionValue("driver", "com.mysql.jdbc.Driver");
+			driver = line.getOptionValue("driver", MYSQL_DRIVER);
 			// Database name
 			if (!line.hasOption("database")) {
 				// automatically generate the help statement
@@ -242,6 +252,26 @@ public class DirectMapping {
 					System.exit(-1);
 				}
 			}
+			// Norm version
+			if (line.hasOption("version")) {
+				switch (int_version) {
+				case 1:
+					version = Version.WD_20110920;
+					break;
+				case 2:
+					version = Version.WD_20110324;
+					// Check DB compatibilities
+					if (!(driver.equals(MYSQL_DRIVER) || driver.equals(POSTGRE_DRIVER))){
+						log.error("[DirectMapping:main] Db2triples does'nt support this driver for the Working Draft" +
+								" of 23 March 2011 (only MySQL and PostGreSQL for this time). " +
+								"You can set the version option to select Working Draft of 20 September 2011.");
+						System.exit(-1);
+					}
+					break;
+				default:
+					break;
+				}
+			}
 
 		} catch (ParseException exp) {
 			// oops, something went wrong
@@ -273,9 +303,10 @@ public class DirectMapping {
 					System.exit(-1);
 				}
 				// Extract database model
-				Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
+				/**Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
 				g = DirectMapper.generateDirectMapping(db, baseURI,
-						nativeOutput);
+						nativeOutput);**/
+				g = DirectMapper.generateDirectMapping(conn, version, driver, baseURI, null, nativeOutput);
 			} else {
 				File outputFile = new File(output);
 				if (outputFile.exists() && !forceExistingRep) {
@@ -287,8 +318,9 @@ public class DirectMapping {
 					System.exit(-1);
 				}
 				// Extract database model
-				Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
-				g = DirectMapper.generateDirectMapping(db, baseURI);
+				/**Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
+				g = DirectMapper.generateDirectMapping(db, baseURI);**/
+				g = DirectMapper.generateDirectMapping(conn, version, driver, baseURI, null, null);
 				// Dump graph
 				g.dumpRDF(output, rdfFormat);
 			}

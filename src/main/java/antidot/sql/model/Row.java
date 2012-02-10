@@ -34,35 +34,37 @@ package antidot.sql.model;
 
 import java.util.TreeMap;
 
+import antidot.dm.model.Tuple;
+
 /**
  * @author   jh
  */
-public class Row {
+public class Row implements Tuple {
 
 	/**
 	 */
-	TreeMap<String, String> values; // TODO : use SQL type ?
+	TreeMap<String, String> values;
 	/**
 	 */
-	String parentTableName;
+	Body parentBody;
 
 	/**
 	 * @return
 	 */
-	public String getParentTableName() {
-		return parentTableName;
+	public Body getParentBody() {
+		return parentBody;
 	}
 
 	/**
 	 * @param  tableName
 	 */
-	public void setParentTableName(String tableName) {
-		this.parentTableName = tableName;
+	public void setParentBody(Body parentBody) {
+		this.parentBody = parentBody;
 	}
 
-	public Row(TreeMap<String, String> values, String parentTableName) {
+	public Row(TreeMap<String, String> values, Body parentBody) {
 		this.values = values;
-		this.parentTableName = parentTableName;
+		this.parentBody = parentBody;
 	}
 
 	/**
@@ -80,7 +82,7 @@ public class Row {
 	}
 
 	public String toString() {
-		String result = "{[Row:toString] parentTableName = " + parentTableName + "; values = ";
+		String result = "{[Row:toString] values = ";
 		int i = 0;
 		for (String columnName : values.navigableKeySet()) {
 			i++;
@@ -88,6 +90,9 @@ public class Row {
 			if (i < values.size())
 				result += ", ";
 		}
+		result += "; parentBody = " + parentBody;
+		if (parentBody != null) result += "; parentTable = " + parentBody.getParentTable();
+		else result += ";";
 		result += "}";
 		return result;
 	}

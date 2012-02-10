@@ -35,10 +35,9 @@ import org.apache.commons.logging.LogFactory;
 import org.openrdf.rio.RDFFormat;
 
 import antidot.dm.core.DirectMapper;
+import antidot.dm.core.DirectMappingEngine;
 import antidot.rdf.impl.sesame.SesameDataSet;
 import antidot.sql.core.SQLConnector;
-import antidot.sql.core.SQLExtractor;
-import antidot.sql.model.Database;
 
 public class DirectMappingTools {
 	
@@ -73,9 +72,10 @@ public class DirectMappingTools {
 		try {
 			conn = SQLConnector.connect(userName, password, url, driver, dbName);
 			// Extract database model
-			Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
+			/**Database db = SQLExtractor.extractMySQLDatabase(conn, null, driver);
 			// Generate RDF graph
-			SesameDataSet g = DirectMapper.generateDirectMapping(db, baseURI);
+			SesameDataSet g = DirectMapper.generateDirectMapping(db, baseURI);**/
+			SesameDataSet g = DirectMapper.generateDirectMapping(conn, DirectMappingEngine.Version.WD_20110324, driver, baseURI, null, null);
 			// Return N3 string
 			String result = g.printRDF(rdfFormat);
 			return result;

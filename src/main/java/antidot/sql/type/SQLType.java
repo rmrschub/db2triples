@@ -15,238 +15,99 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
- *
- * SQL types
- *
- * Represents SQL types in different formalism (MySQL for instance).
- * 
- * @author jhomo
- *
- */
+*
+* SQL generic types
+*
+* Represents SQL types in formalisn defined in :
+* SQL. ISO/IEC 9075-1:2008 SQL – Part 1: Framework (SQL/Framework) International Organization for Standardization, 27 January 2009.
+* SQLFN. ISO/IEC 9075-2:2008 SQL – Part 2: Foundation (SQL/Foundation) International Organization for Standardization, 27 January 2009.
+*
+*/
 package antidot.sql.type;
 
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public enum SQLType {
+	BINARY(Types.BINARY),
+	BINARY_VARYING(Types.VARBINARY),
+	BINARY_LARGE_OBJECT(Types.LONGVARBINARY),
+	NUMERIC(Types.NUMERIC),
+	DECIMAL(Types.DECIMAL), 
+	SMALLINT(Types.SMALLINT),
+	INTEGER(Types.INTEGER),
+	BIGINT(Types.BIGINT),
+	FLOAT(Types.FLOAT),
+	REAL(Types.REAL), 
+	DOUBLE_PRECISION(Types.DOUBLE), 
+	BOOLEAN(Types.BOOLEAN), 	
+	DATE(Types.DATE),	
+	TIME(Types.TIME),
+	TIMESTAMP(Types.TIMESTAMP),
+	UNKNOWN(Types.OTHER),
+	CHAR(Types.CHAR),
+	VARCHAR(Types.VARCHAR),
+	STRING(Types.LONGVARCHAR),
+	TINYINT(Types.TINYINT),
 	
-	/**
-	 * Unkonw type.
-	 */
-	UNKNOW("UNKNOW"),
+	// Unsupported
+	BLOB(Types.BLOB);
+	
+	// Log
+	private static Log log = LogFactory
+			.getLog(SQLType.class);
+	
+	private int javaSQLType;
 
-	/**
-	 * MySQL Types and their display name. References :
-	 * http://www.htmlite.com/mysql003.php
-	 * http://dev.mysql.com/doc/refman/5.0/en/numeric-types.html
-	 */
-
-	CHAR("CHAR"), // A fixed section from 0 to 255 characters long.
-	VARCHAR("VARCHAR"), // A variable section from 0 to 255 characters long.
-	TINYTEXT("TINYTEXT"), // A string with a maximum length of 255
-	// characters.
-	TINYBLOB("TINYBLOB"),
-	TEXT("TEXT"), // A string with a maximum length of 65535 characters.
-	BLOB("BLOB"), // A string with a maximum length of 65535 characters.
-	MEDIUMTEXT("MEDIUMTEXT"), // A string with a maximum length of 16777215
-	MEDIUMBLOB("MEDIUMBLOB"), // A string with a maximum length of 16777215
-	// characters.
-	LONGTEXT("LONGTEXT"), // A string with a maximum length of 4294967295
-	// characters.
-	LONGBLOB("LONGBLOB"), // A string with a maximum length of 4294967295
-	// characters.
-	BIT("BIT"), // 0 or 1, equivalent to TINYINT(1) (since MySQL 5.0.3)
-	TINYINT("TINYINT"), // -128 to 127 normal
-	UNSIGNED_TINYINT("TINYINT UNSIGNED"), // 0 to 255 UNSIGNED.
-	SMALLINT("SMALLINT"), // -32768 to 32767 normal
-	UNSIGNED_SMALLINT("SMALLINT UNSIGNED"), // 0 to 65535 UNSIGNED.
-	MEDIUMINT("MEDIUMINT"), // -8388608 to 8388607 normal.
-	UNSIGNED_MEDIUMINT("MEDIUMINT UNSIGNED"), // 0 to 16777215 UNSIGNED.
-	INT("INT"), // -2147483648 to 2147483647 normal.
-	UNSIGNED_INT("INT UNSIGNED"), // 0 to 4294967295 UNSIGNED.
-	BIGINT("BIGINT"), // -9223372036854775808 to 9223372036854775807 normal.
-	UNSIGNED_BIGINT("BIGINT UNSIGNED"), // 0 to 18446744073709551615
-	// UNSIGNED.
-	FLOAT("FLOAT"), // A small number with a floating decimal point.
-	UNSIGNED_FLOAT("FLOAT UNSIGNED"), // A small positive number with a
-	// floating decimal point.
-	DOUBLE("DOUBLE"), // A large number with a floating decimal point.
-	UNSIGNED_DOUBLE("DOUBLE UNSIGNED"), // A large positive number with a
-	// floating decimal point.
-	DECIMAL("DECIMAL"), // A DOUBLE stored as a string , allowing for a
-	// fixed decimal
-	UNSIGNED_DECIMAL("DECIMAL UNSIGNED"), // A positive DOUBLE stored as a
-	// string , allowing for a
-	// fixed decimal
-	// point.
-	DATE("DATE"), // YYYY-MM-DD ("1000-01-01" - "9999-12-31").
-	DATETIME("DATETIME"), // YYYY-MM-DD HH:MM:SS ("1000-01-01 00:00:00" -
-	// "9999-12-31 23:59:59").
-	TIMESTAMP("TIMESTAMP"), // YYYYMMDDHHMMSS (19700101000000 - 2037+).
-	TIME("TIME"), // HH:MM:SS ("-838:59:59" -"838:59:59").
-	YEAR("YEAR"), // YYYY (1900 - 2155).
-	SET("SET"), // // Similar to ENUM except each column may have more than
-	// one of
-	// the specified possible values.
-	ENUM("ENUM"),
-	// Short for ENUMERATION which means that each column may have one of a
-	// specified possible values.
+	private SQLType(int javaSQLType) {
+		this.javaSQLType = javaSQLType;
+	}
 	
-	/**
-	 * PostGreSQL Types and their display name. References :
-	 * http://docs.postgresql.fr/8.1/datatype.html
-	 */
-	BIGSERIAL("BIGSERIAL"),
-	BPCHAR("BPCHAR"),
-	SERIAL8("SERIAL8"),
-	VARBIT("VARBIT"),
-	BIT_VARYING("BIT VARYING"),
-	BOOL("BOOL"),
-	BOOLEAN("BOOLEAN"),
-	BOX("BOX"),
-	BYTEA("BYTEA"),
-	CHARACTER_VARYING("CHARACTER VARYING"),
-	CHARACTER("CHARACTER"),
-	CIDR("CIDR"),
-	CIRCLE("CIRCLE"),
-	DOUBLE_PRECISION("DOUBLE PRECISION"),
-	FLOAT4("FLOAT4"), 
-	FLOAT8("FLOAT8"), 
-	INET("INET"),
-	INT2("INT2"),
-	INT4("INT4"),
-	INT8("INT8"),
-	INTERVAL("INTERVAL"),
-	LINE("LINE"),
-	LSEG("LSEG"),
-	MACADDR("MACADDR"),
-	MONEY("MONEY"),
-	NUMERIC("NUMERIC"), 
-	PATH("PATH"), 
-	POINT("POINT"),
-	POLYGON("POLYGON"),
-	REAL("REAL"),
-	SERIAL("SERIAL"),
-	SERIAL4("SERIAL4"),
-	TIMETZ("TIMETZ"),
-	TIMESTAMPTZ("TIMESTAMPTZ");
+	public int getID(){
+		return javaSQLType;
+	}
 	
-	public static ArrayList<SQLType> postGreSQLTypes = new ArrayList<SQLType>();
+	private static Map<SQLType, String> sqlCastQueries = new HashMap<SQLType, String>();
+	
 	static {
-		postGreSQLTypes.add(VARCHAR);
-		postGreSQLTypes.add(TEXT);
-		postGreSQLTypes.add(BIT);
-		postGreSQLTypes.add(SMALLINT);
-		postGreSQLTypes.add(INT);
-		postGreSQLTypes.add(BIGINT);
-		postGreSQLTypes.add(DECIMAL);
-		postGreSQLTypes.add(DATE);
-		postGreSQLTypes.add(TIMESTAMP);
-		postGreSQLTypes.add(TIME);
-		postGreSQLTypes.add(BIGSERIAL);
-		postGreSQLTypes.add(SERIAL8);
-		postGreSQLTypes.add(VARBIT);
-		postGreSQLTypes.add(BIT_VARYING);
-		postGreSQLTypes.add(BOOL);
-		postGreSQLTypes.add(BOX);
-		postGreSQLTypes.add(BOOLEAN);
-		postGreSQLTypes.add(BYTEA);
-		postGreSQLTypes.add(CHARACTER_VARYING);
-		postGreSQLTypes.add(CHARACTER);
-		postGreSQLTypes.add(CIDR);
-		postGreSQLTypes.add(CIRCLE);
-		postGreSQLTypes.add(DOUBLE_PRECISION);
-		postGreSQLTypes.add(FLOAT4);
-		postGreSQLTypes.add(FLOAT8);
-		postGreSQLTypes.add(INET);
-		postGreSQLTypes.add(INT2);
-		postGreSQLTypes.add(INT4);
-		postGreSQLTypes.add(INT8);
-		postGreSQLTypes.add(INTERVAL);
-		postGreSQLTypes.add(LINE);
-		postGreSQLTypes.add(LSEG);
-		postGreSQLTypes.add(MACADDR);
-		postGreSQLTypes.add(MONEY);
-		postGreSQLTypes.add(NUMERIC);
-		postGreSQLTypes.add(PATH);
-		postGreSQLTypes.add(POINT);
-		postGreSQLTypes.add(POLYGON);
-		postGreSQLTypes.add(REAL);
-		postGreSQLTypes.add(SERIAL);
-		postGreSQLTypes.add(SERIAL4);
-		postGreSQLTypes.add(TIMETZ);
-		postGreSQLTypes.add(TIMESTAMPTZ);
-		postGreSQLTypes.add(BPCHAR);
-	}
-	
-	public static ArrayList<SQLType> mySQLTypes = new ArrayList<SQLType>();
-	static {	mySQLTypes.add(CHAR);
-		mySQLTypes.add(VARCHAR);
-		mySQLTypes.add(TINYTEXT);
-		mySQLTypes.add(TINYBLOB);
-		mySQLTypes.add(TEXT);
-		mySQLTypes.add(BLOB);
-		mySQLTypes.add(MEDIUMTEXT);
-		mySQLTypes.add(MEDIUMBLOB);
-		mySQLTypes.add(LONGTEXT);
-		mySQLTypes.add(LONGBLOB);
-		mySQLTypes.add(BIT);
-		mySQLTypes.add(TINYINT);
-		mySQLTypes.add(UNSIGNED_TINYINT);
-		mySQLTypes.add(SMALLINT);
-		mySQLTypes.add(UNSIGNED_SMALLINT);
-		mySQLTypes.add(MEDIUMINT);
-		mySQLTypes.add(UNSIGNED_MEDIUMINT);
-		mySQLTypes.add(INT);
-		mySQLTypes.add(UNSIGNED_INT);
-		mySQLTypes.add(BIGINT);
-		mySQLTypes.add(UNSIGNED_BIGINT);
-		mySQLTypes.add(FLOAT);
-		mySQLTypes.add(UNSIGNED_FLOAT);
-		mySQLTypes.add(DOUBLE);
-		mySQLTypes.add(UNSIGNED_DOUBLE);
-		mySQLTypes.add(DECIMAL);
-		mySQLTypes.add(DATE);
-		mySQLTypes.add(DATETIME);
-		mySQLTypes.add(TIMESTAMP);
-		mySQLTypes.add(TIME);
-		mySQLTypes.add(YEAR);
-		mySQLTypes.add(SET);
-		mySQLTypes.add(ENUM);
-	}
-	
-	private String displayName;
-
-	private SQLType(String displayName) {
-		this.displayName = displayName;
-	}
-
-	public String toString() {
-		return displayName;
-	}
-
-	/**
-	 * @return
-	 */
-	public String getDisplayName() {
-		return displayName;
+		sqlCastQueries.put(SQLType.NUMERIC, "CAST(value AS CHAR(18))");
+		sqlCastQueries.put(SQLType.DECIMAL, "CAST(value AS CHAR(18))");
+		sqlCastQueries.put(SQLType.SMALLINT, "CAST(value AS CHAR(18))");
+		sqlCastQueries.put(SQLType.INTEGER, "CAST(value AS CHAR(18))");
+		sqlCastQueries.put(SQLType.BIGINT, "CAST(value AS CHAR(18))");
+		sqlCastQueries.put(SQLType.FLOAT, "CAST(value AS CHAR(23))");
+		sqlCastQueries.put(SQLType.REAL, "CAST(value AS CHAR(23))");
+		sqlCastQueries.put(SQLType.DOUBLE_PRECISION, "CAST(value AS CHAR(23))");
+		sqlCastQueries.put(SQLType.BOOLEAN, "IF (value, 'true', 'false')");
+		sqlCastQueries.put(SQLType.DATE, "CAST(value AS CHAR(13))");
+		sqlCastQueries.put(SQLType.TIME, "CAST(value AS CHAR(23))");
+		sqlCastQueries.put(SQLType.TIMESTAMP, "REPLACE(CAST(value AS CHAR(37)), ' ', 'T')");
 	}
 
 	public static ArrayList<SQLType> getDateTypes() {
 		ArrayList<SQLType> result = new ArrayList<SQLType>();
 		result.add(DATE);
-		result.add(DATETIME);
 		result.add(TIMESTAMP);
 		return result;
 	}
 
 	public static ArrayList<SQLType> getBlobTypes() {
 		ArrayList<SQLType> result = new ArrayList<SQLType>();
-		result.add(TINYBLOB);
-		result.add(MEDIUMBLOB);
-		result.add(LONGBLOB);
 		result.add(BLOB);
+		return result;
+	}
+	
+	public static ArrayList<SQLType> getBinaryTypes() {
+		ArrayList<SQLType> result = new ArrayList<SQLType>();
+		result.add(BINARY);
+		result.add(BINARY_VARYING);
+		result.add(SQLType.BINARY_LARGE_OBJECT);
 		return result;
 	}
 
@@ -257,21 +118,39 @@ public enum SQLType {
 	public boolean isBlobType() {
 		return getBlobTypes().contains(this);
 	}
+	
+	public boolean isBinaryType() {
+		return getBlobTypes().contains(this);
+	}
+	
+	public boolean isCastable(){
+		return sqlCastQueries.keySet().contains(this);
+	}
 
 	/**
-	 * Converts a mySQLType from its display name.
+	 * Converts a specific SQL Type from its display name.
 	 * 
 	 * @param displayName
 	 * @return
 	 */
-	public static SQLType toSQLType(String displayName) {
-		for (SQLType mySQLType : SQLType.values()) {
-			if (mySQLType.getDisplayName().equals(displayName)
-					|| mySQLType.getDisplayName().toLowerCase().equals(
-							displayName))
-				return mySQLType;
+	public static SQLType toSQLType(int id) {
+		for (SQLType sqlType : SQLType.values()) {
+			if (sqlType.getID() == id)
+				return sqlType;
 		}
-		return UNKNOW;
+		return UNKNOWN;
+	}
+	
+	public static String getSQLCastQuery(SQLType type, String value){
+		if (type.isBinaryType()){
+			log.warn("[SQLType:getSQLCastQuery] Binary types unsupported for this time. Try to consider it like string...");
+		}
+		if (!type.isCastable()){
+			// No necessery parsing
+			return value;
+		} else {
+			return sqlCastQueries.get(type).replaceFirst("value", value);
+		}
 	}
 
 }

@@ -276,9 +276,9 @@ public class Table {
 				+ "\tforeignKeys = [";
 		for (ForeignKey key : getForeignKeys())
 			result += key;
-		result += "];" + System.getProperty("line.separator") + "\tbody = "
-				+ body;
-		result += ";" + System.getProperty("line.separator")
+		//result += "];" + System.getProperty("line.separator") + "\tbody = "
+		//		+ body;
+		result += "];" + System.getProperty("line.separator")
 				+ "\tindexed rows = " + indexedRowsByFk.keySet();
 		return result;
 	}

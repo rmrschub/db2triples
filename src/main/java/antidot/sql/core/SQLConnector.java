@@ -43,7 +43,7 @@ import java.util.TimeZone;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import antidot.sql.type.SQLType;
+import antidot.sql.type.SQLSpecificType;
 
 public abstract class SQLConnector {
 
@@ -169,7 +169,7 @@ public abstract class SQLConnector {
 	 * @param timestamp
 	 * @param timeZone
 	 */
-	public static String dateFormatToDate(SQLType mySQLType,
+	public static String dateFormatToDate(SQLSpecificType mySQLType,
 			Long timestamp, String timeZone) {
 		if (log.isDebugEnabled()) log.debug("[SQLConnector:dateFormatToDate] mySQLType : " + mySQLType
 				+ " timestamp : " + timestamp);

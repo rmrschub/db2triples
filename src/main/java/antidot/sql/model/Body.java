@@ -34,13 +34,15 @@ package antidot.sql.model;
 import java.util.HashSet;
 
 public class Body {
-	
+
 	/**
 	 */
 	private HashSet<Row> rows;
-	
-	public Body(HashSet<Row> rows){
+	private Table parentTable;
+
+	public Body(HashSet<Row> rows, Table parentTable) {
 		this.rows = rows;
+		this.parentTable = parentTable;
 	}
 
 	/**
@@ -50,22 +52,31 @@ public class Body {
 		return rows;
 	}
 
+	public Table getParentTable() {
+		return parentTable;
+	}
+
 	/**
-	 * @param  rows
+	 * @param rows
 	 */
 	public void setRows(HashSet<Row> rows) {
 		this.rows = rows;
 	}
-	
-	public String toString(){
-		String result = "{[Body:toString] rows = ";
+
+	public void setParentTable(Table parentTable) {
+		this.parentTable = parentTable;
+	}
+
+	public String toString() {
+		/*String result = "{[Body:toString] rows = ";
 		int i = 0;
 		for (Row row : rows) {
 			i++;
 			result += row;
 			if (i < rows.size())
 				result += ", ";
-		}
+		}*/
+		String result = "{[Body:toString] parentTable = " + parentTable.getTableName();
 		result += "}";
 		return result;
 	}

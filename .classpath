@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="/home/jhomo/workspace/Libs/postgresql-9.1-901.jdbc4.jar"/>
 	<classpathentry kind="lib" path="/home/jhomo/workspace/Libs/slf4j-1.6.4/slf4j-simple-1.6.4.jar"/>
 	<classpathentry kind="lib" path="/home/jhomo/workspace/Libs/slf4j-1.6.4/slf4j-api-1.6.4.jar"/>
+	<classpathentry kind="lib" path="/home/jhomo/Code/DB2TRIPLES/Programmation/Antidot/db2triples/lib/junit-4.8.2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

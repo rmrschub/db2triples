@@ -34,7 +34,7 @@ package antidot.sql.model;
 
 import java.util.ArrayList;
 
-public class ForeignKey extends CandidateKey {
+public class ForeignKey  extends CandidateKey {
 
 	// This foreign key targets another key in another table called reference key 
 	/**

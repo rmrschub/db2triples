@@ -40,20 +40,20 @@ package antidot.sql.model;
 
 import java.util.ArrayList;
 
+import antidot.dm.model.Key;
+
 /**
  * @author   jh
  */
-public class CandidateKey {
+public class CandidateKey implements Key {
 
 	/**
 	 * Describe type of key. For instance, a key can be primary (unique for a table and allow to identify a row)  or foreign (allow to specify an entity of another table)
 	 */
 	public enum KeyType {
-		/**
-		 */
-		PRIMARY, /**
-		 */
-		FOREIGN;
+		PRIMARY, 
+		FOREIGN,
+		REFERENCE;
 	}
 
 	/**

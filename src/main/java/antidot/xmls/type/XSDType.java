@@ -84,7 +84,9 @@ public enum XSDType {
 	ENUMERATION("enumeration"), // See 4.3.5.2 XML Representation of enumeration Schema Components
 	/**
 	 */
-	POSITIVE_INTEGER("positiveInteger"); // Based on xsd:nonNegativeInteger
+	POSITIVE_INTEGER("positiveInteger"), // Based on xsd:nonNegativeInteger
+	BASE_64_BINARY("base64Binary"),
+	BOOLEAN("boolean");
 	
 	public static String XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema#";
 	
