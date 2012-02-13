@@ -15,70 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
  *
- * SQL model : body
+ * SQL model : Body
  *
- * Represents body of a database according to W3C database model. 
- * The body contains all rows of a table.
+ * Represents body of a database. 
+ * The body contains all tuples of a table.
  * 
- * Reference : Direct Mapping Definition, 
- * A Direct Mapping of Relational Data to RDF W3C Working Draft 24 March 2011 
- *
- * @author jhomo
- *
  */
 package antidot.sql.model;
 
 import java.util.HashSet;
 
-public class Body {
+public interface Body {
 
 	/**
-	 */
-	private HashSet<Row> rows;
-	private Table parentTable;
-
-	public Body(HashSet<Row> rows, Table parentTable) {
-		this.rows = rows;
-		this.parentTable = parentTable;
-	}
-
-	/**
+	 * Return tuples of a table.
 	 * @return
 	 */
-	public HashSet<Row> getRows() {
-		return rows;
-	}
-
-	public Table getParentTable() {
-		return parentTable;
-	}
+	public HashSet<Tuple> getTuples();
 
 	/**
-	 * @param rows
+	 * Return table which contains this body.
+	 * @return
 	 */
-	public void setRows(HashSet<Row> rows) {
-		this.rows = rows;
-	}
-
-	public void setParentTable(Table parentTable) {
-		this.parentTable = parentTable;
-	}
-
-	public String toString() {
-		/*String result = "{[Body:toString] rows = ";
-		int i = 0;
-		for (Row row : rows) {
-			i++;
-			result += row;
-			if (i < rows.size())
-				result += ", ";
-		}*/
-		String result = "{[Body:toString] parentTable = " + parentTable.getTableName();
-		result += "}";
-		return result;
-	}
-
+	public Table getParentTable();
 }

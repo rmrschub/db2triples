@@ -20,11 +20,41 @@
  *
  * Direct Mapping : Key
  * 
- * Empty interface which defines a generic key. 
+ * Interface which defines a generic key. 
  * A "key" is a representation of an element which etablish links between 
  * tables in a database.
  * 
  ****************************************************************************/
-package antidot.dm.model;
+package antidot.sql.model;
 
-public interface Key {}
+import java.util.ArrayList;
+
+public interface Key {
+	
+	/**
+	 * Returns table name which contains this key.
+	 * @return
+	 */
+	public String getSourceTable();
+
+
+	/**
+	 * Set the source table name.
+	 * @param  sourceTable
+	 */
+	public void setSourceTable(String sourceTable);
+
+	/**
+	 * Returns column names which compose the key.
+	 * @return
+	 */
+	public ArrayList<String> getColumnNames();
+
+	/**
+	 * Return true if the key has the same column names than another key.
+	 * @param key
+	 * @return
+	 */
+	public boolean matchSameColumns(Key key);
+	
+}

@@ -47,19 +47,19 @@ import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;
 
-import antidot.dm.model.Key;
-import antidot.dm.model.Tuple;
 import antidot.rdf.impl.sesame.SemiStatement;
 import antidot.rdf.tools.RDFPrefixes;
 import antidot.rdf.tools.RDFToolkit;
 import antidot.rdf.tools.SQLToRDFToolkit;
 import antidot.sql.core.SQLConnector;
-import antidot.sql.model.Body;
+import antidot.sql.model.StdBody;
 import antidot.sql.model.CandidateKey;
 import antidot.sql.model.ForeignKey;
-import antidot.sql.model.Header;
+import antidot.sql.model.StdHeader;
+import antidot.sql.model.Key;
 import antidot.sql.model.Row;
-import antidot.sql.model.Table;
+import antidot.sql.model.StdTable;
+import antidot.sql.model.Tuple;
 import antidot.sql.type.SQLSpecificType;
 import antidot.xmls.type.XSDType;
 
@@ -72,7 +72,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	// Database values
 	private String currentTableName;
 	private LinkedHashMap<String, String> datatypes;
-	private Header header;
+	private StdHeader header;
 	private ArrayList<CandidateKey> primaryKeys;
 	private HashSet<ForeignKey> foreignKeys;
 
@@ -128,7 +128,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		// First table treatment
 		// Get datatypes
 		datatypes = extractDatatypes(headerSet, tableName);
-		header = new Header(datatypes);
+		header = new StdHeader(datatypes);
 		// Extract candidate keys
 		primaryKeys = extractPrimaryKeys(primaryKeysSet, header, tableName);
 		// Extract foreign key
@@ -147,7 +147,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		// Get datatypes
 		LinkedHashMap<String, String> referencedDatatypes = extractDatatypes(
 				headerSet, tableName);
-		Header referencedHeader = new Header(referencedDatatypes);
+		StdHeader referencedHeader = new StdHeader(referencedDatatypes);
 		// Extract candidate keys
 		ArrayList<CandidateKey> referencedPrimaryKeys = extractPrimaryKeys(
 				primaryKeysSet, referencedHeader, tableName);
@@ -169,14 +169,14 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Build objects associated with a row from database extracted sets.
 	 */
-	private void buildTmpModel(Row row, String tableName, Header header,
+	private void buildTmpModel(Row row, String tableName, StdHeader header,
 			ArrayList<CandidateKey> primaryKeys, HashSet<ForeignKey> foreignKeys) {
 		// Create body
 		HashSet<Row> rows = new HashSet<Row>();
 		rows.add(row);
-		Body body = new Body(rows, null);
+		StdBody body = new StdBody(rows, null);
 		// Create table
-		Table table = new Table(tableName, header, primaryKeys, foreignKeys,
+		StdTable table = new StdTable(tableName, header, primaryKeys, foreignKeys,
 				body);
 		// Link objects
 		body.setParentTable(table);
@@ -186,7 +186,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Extract a row from values datasets and its model.
 	 */
-	private Row extractRow(String driver, Header header, String tableName,
+	private Row extractRow(String driver, StdHeader header, String tableName,
 			ResultSet valueSet, String timeZone) {
 		TreeMap<String, String> values = new TreeMap<String, String>();
 		for (String columnName : header.getColumnNames()) {
@@ -285,7 +285,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 * Extract primary keys from database sets.
 	 */
 	private ArrayList<CandidateKey> extractPrimaryKeys(
-			ResultSet primaryKeysSet, Header header, String tableName) {
+			ResultSet primaryKeysSet, StdHeader header, String tableName) {
 		ArrayList<CandidateKey> primaryKeys = new ArrayList<CandidateKey>();
 		// In particular : primary key
 
@@ -393,7 +393,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 			String tableName) {
 		LinkedHashMap<String, String> datatypes = extractDatatypes(headersSet,
 				tableName);
-		Header header = new Header(datatypes);
+		StdHeader header = new StdHeader(datatypes);
 		// Construct SQL query
 		String SQLQuery = "SELECT ";
 		int i = 0;
@@ -437,7 +437,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		Row r = (Row) tuple;
 		LinkedHashMap<String, String> datatypes = extractDatatypes(headersSet,
 				tableName);
-		Header header = new Header(datatypes);
+		StdHeader header = new StdHeader(datatypes);
 		// Construct SQL query
 		// SELECT clause
 		String SQLQuery = "SELECT ";
@@ -494,7 +494,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
-	private Resource phi(Table t, Row r, String baseURI)
+	private Resource phi(StdTable t, Row r, String baseURI)
 			throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
 			log.debug("[DirectMapper:phi] Table : " + t);
@@ -514,7 +514,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Phi function for referenced rows (in particular for blank node mangement)
 	 */
-	private Resource phi(Table t, Row row, Row referencedRow, String baseURI)
+	private Resource phi(StdTable t, Row row, Row referencedRow, String baseURI)
 			throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
 			log.debug("[DirectMapper:phi] Table : " + t);
@@ -535,7 +535,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Generate IRI name from databse information.
 	 */
-	private String generateUniqNodeIRI(Row r, Table t, CandidateKey primaryKey, String baseURI){
+	private String generateUniqNodeIRI(Row r, StdTable t, CandidateKey primaryKey, String baseURI){
 		String stringURI = t.getTableName() + solidus;
 		int i = 0;
 		for (String columnName : primaryKey.getColumnNames()) {
@@ -586,7 +586,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 
 		String saveTableName = referencedRow.getParentBody().getParentTable()
 				.getTableName();
-		Table referencedTable = referencedRow.getParentBody().getParentTable();
+		StdTable referencedTable = referencedRow.getParentBody().getParentTable();
 		referencedTable.setTableName(fk.getTargetTableName());
 
 		Resource s = phi(referencedTable, referencedRow, baseURI);
@@ -638,7 +638,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		}
 		ForeignKey primaryIsFk = (ForeignKey) primaryIsForeignKey;
 		HashSet<Statement> result = new HashSet<Statement>();
-		Table currentTable = r.getParentBody().getParentTable();
+		StdTable currentTable = r.getParentBody().getParentTable();
 
 		Resource s = phi(currentTable, r, baseURI);
 		// Temporary set of triple used to store triples
@@ -696,7 +696,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Convert type predicate from a row.
 	 */
-	private Statement convertType(Resource s, String baseURI, Table currentTable) {
+	private Statement convertType(Resource s, String baseURI, StdTable currentTable) {
 		// Table Triples
 		URI typePredicate = vf.createURI(RDFPrefixes.prefix.get("rdf"), "type");
 		URI typeObject = vf.createURI(baseURI, currentTable.getTableName());
@@ -710,7 +710,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
-	private Statement convertLex(Header header, Row r, String columnName,
+	private Statement convertLex(StdHeader header, Row r, String columnName,
 			String baseURI) throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
 			log.debug("[DirectMapper:convertLex] Table "

@@ -39,9 +39,9 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import antidot.dm.model.Key;
-import antidot.dm.model.Tuple;
 import antidot.sql.core.SQLConnector;
+import antidot.sql.model.Key;
+import antidot.sql.model.Tuple;
 
 public class TupleExtractor {
 

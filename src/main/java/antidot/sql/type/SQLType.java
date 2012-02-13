@@ -141,9 +141,16 @@ public enum SQLType {
 		return UNKNOWN;
 	}
 	
+	/**
+	 * Return the SQL query use for convert datatype directly from database.
+	 * @param type
+	 * @param value
+	 * @return
+	 */
 	public static String getSQLCastQuery(SQLType type, String value){
 		if (type.isBinaryType()){
-			log.warn("[SQLType:getSQLCastQuery] Binary types unsupported for this time. Try to consider it like string...");
+			log.warn("[SQLType:getSQLCastQuery] Binary types unsupported for this time. " +
+					"There will be considered like string object.");
 		}
 		if (!type.isCastable()){
 			// No necessery parsing

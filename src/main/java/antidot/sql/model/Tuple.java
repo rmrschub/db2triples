@@ -20,13 +20,42 @@
  *
  * Direct Mapping : Tuple
  * 
- * Empty interface which defines a generic tuple. 
+ * Interface which defines a generic tuple. 
  * A "tuple" is a representation of an entity stored in a table in database.
  * 
- * Example : in the 2 DirectMappingEngine, the same model is used (package antidot.sql.model), in this case Tuple == Row.
- * But another implementation of DirectMapping could use another SQL model (Tuple == SpecificRow for example).
+ * A "tuple" is always included in a "body" and has some fields associated 
+ * with "values". A "value" is represented by its string format.
  * 
  ****************************************************************************/
-package antidot.dm.model;
+package antidot.sql.model;
 
-public interface Tuple {}
+import java.util.TreeMap;
+
+
+public interface Tuple {
+	
+	/**
+	 * Get body which contains this tuple.
+	 * @return
+	 */
+	public StdBody getParentBody();
+
+	/**
+	 * Set body which contains this tuple.
+	 * @param parentBody
+	 */
+	public void setParentBody(StdBody parentBody);
+
+	/**
+	 * Get values contained in this tuple.
+	 * @return
+	 */
+	public TreeMap<String, String> getValues();
+
+	/**
+	 * Set values contained in this tuple.
+	 * @param values
+	 */
+	public void setValues(TreeMap<String, String> values);
+
+}

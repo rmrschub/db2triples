@@ -18,8 +18,8 @@
 
 /**
  *
- * SQL model : body
- *
+ * SQL model : Candidate Key
+ * 
  * Represents candidate keys of a database according to W3C database model.
  * A candidate key of a relation is a minimal superkey for that relation;
  * that is, a set of attributes such that :
@@ -33,18 +33,11 @@
  * Reference : Direct Mapping Definition, 
  * A Direct Mapping of Relational Data to RDF W3C Working Draft 24 March 2011 
  *
- * @author jhomo
- *
  */
 package antidot.sql.model;
 
 import java.util.ArrayList;
 
-import antidot.dm.model.Key;
-
-/**
- * @author   jh
- */
 public class CandidateKey implements Key {
 
 	/**
@@ -56,20 +49,14 @@ public class CandidateKey implements Key {
 		REFERENCE;
 	}
 
-	/**
-	 */
 	private ArrayList<String> columnNames;
-	/**
-	 */
 	private String sourceTable;
-	/**
-	 */
 	private KeyType type;
 
 	public CandidateKey(ArrayList<String> columnNames) {
 		if (columnNames == null)
 			throw new IllegalStateException(
-					"[CandidateKey:construct] ColumNames don't exist.");
+					"[CandidateKey:CandidateKey] This list of column names doesn't exist.");
 		this.columnNames = new ArrayList<String>();
 		this.columnNames.addAll(columnNames);
 		this.sourceTable = null;
@@ -92,32 +79,18 @@ public class CandidateKey implements Key {
 		this.type = type;
 	}
 
-	/**
-	 * Returns table name which contains this key.
-	 * @return
-	 */
 	public String getSourceTable() {
 		return sourceTable;
 	}
 
-	/**
-	 * Returns type of this key.
-	 * @return
-	 */
 	public KeyType getKeyType() {
 		return type;
 	}
 
-	/**
-	 * @param  sourceTable
-	 */
 	public void setSourceTable(String sourceTable) {
 		this.sourceTable = sourceTable;
 	}
 
-	/**
-	 * @return
-	 */
 	public ArrayList<String> getColumnNames() {
 		return columnNames;
 	}
@@ -129,16 +102,22 @@ public class CandidateKey implements Key {
 		return result;
 	}
 
+	/**
+	 * Return true if the type key is the same of given type. 
+	 * @param type
+	 * @return
+	 */
 	public boolean isType(KeyType type) {
 		return (this.type == type);
 	}
 	
-	public boolean matchSameColumns(CandidateKey key){
+	public boolean matchSameColumns(Key key){
 		boolean result = columnNames.size() == key.getColumnNames().size();
 		for (String columnName : key.getColumnNames()){
 			result &= columnNames.contains(columnName);
 		}
 		return result;
 	}
+
 
 }

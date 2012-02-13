@@ -35,8 +35,8 @@ import java.util.HashSet;
 
 import org.openrdf.model.Statement;
 
-import antidot.dm.model.Key;
-import antidot.dm.model.Tuple;
+import antidot.sql.model.Key;
+import antidot.sql.model.Tuple;
 
 public interface DirectMappingEngine {
 
@@ -122,7 +122,6 @@ public interface DirectMappingEngine {
 	public HashSet<Statement> extractTriplesFrom(Tuple tuple,
 			HashMap<Key, Tuple> referencedTuples, Key primaryIsForeignKey,
 			String baseURI) throws UnsupportedEncodingException;
-
 
 	/**
 	 * Methods which convert generic tuples to corresponding model in used norm.

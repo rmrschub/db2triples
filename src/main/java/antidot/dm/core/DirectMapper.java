@@ -39,9 +39,9 @@ import org.apache.commons.logging.LogFactory;
 import org.openrdf.model.Statement;
 
 import antidot.dm.core.DirectMappingEngine.Version;
-import antidot.dm.model.Key;
-import antidot.dm.model.Tuple;
 import antidot.rdf.impl.sesame.SesameDataSet;
+import antidot.sql.model.Key;
+import antidot.sql.model.Tuple;
 
 public abstract class DirectMapper extends Thread {
 	

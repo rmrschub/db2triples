@@ -22,8 +22,6 @@
  * 
  * Reference : http://www.w3.org/TR/xmlschema-2/ http://www.schemacentral.com/sc/xsd 
  *
- * @author jhomo
- *
  */
 package antidot.xmls.type;
 

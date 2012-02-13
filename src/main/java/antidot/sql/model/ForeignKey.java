@@ -18,7 +18,7 @@
 
 /**
  *
- * SQL model : foreign key
+ * SQL model : Foreign Key
  *
  * Represents candidate keys of a database according to W3C database model.
  * A foreign key identifies a column or a set of columns of a table as a 
@@ -26,9 +26,7 @@
  * 
  * Reference : Direct Mapping Definition, 
  * A Direct Mapping of Relational Data to RDF W3C Working Draft 24 March 2011 
- *
- * @author jhomo
- *
+ * 
  */
 package antidot.sql.model;
 
@@ -37,8 +35,6 @@ import java.util.ArrayList;
 public class ForeignKey  extends CandidateKey {
 
 	// This foreign key targets another key in another table called reference key 
-	/**
-	 */
 	private CandidateKey referenceKey;
 
 	public ForeignKey(ArrayList<String> columnNames, CandidateKey referenceKey) {
@@ -76,6 +72,10 @@ public class ForeignKey  extends CandidateKey {
 		return getColumnNames().size() == 1;
 	}
 	
+	/**
+	 * Return the name of table which is the target of this key.
+	 * @return
+	 */
 	public String getTargetTableName(){
 		return this.referenceKey.getSourceTable();
 	}

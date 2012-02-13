@@ -21,8 +21,6 @@
  * SQL specific types
  *
  * Represents SQL types in different formalism (MySQL or PostGreSQL for instance).
- * 
- * @author jhomo
  *
  */
 package antidot.sql.type;

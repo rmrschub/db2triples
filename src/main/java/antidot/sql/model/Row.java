@@ -34,49 +34,29 @@ package antidot.sql.model;
 
 import java.util.TreeMap;
 
-import antidot.dm.model.Tuple;
 
-/**
- * @author   jh
- */
 public class Row implements Tuple {
 
-	/**
-	 */
 	TreeMap<String, String> values;
-	/**
-	 */
-	Body parentBody;
+	StdBody parentBody;
 
-	/**
-	 * @return
-	 */
-	public Body getParentBody() {
+	public StdBody getParentBody() {
 		return parentBody;
 	}
 
-	/**
-	 * @param  tableName
-	 */
-	public void setParentBody(Body parentBody) {
+	public void setParentBody(StdBody parentBody) {
 		this.parentBody = parentBody;
 	}
 
-	public Row(TreeMap<String, String> values, Body parentBody) {
+	public Row(TreeMap<String, String> values, StdBody parentBody) {
 		this.values = values;
 		this.parentBody = parentBody;
 	}
 
-	/**
-	 * @return
-	 */
 	public TreeMap<String, String> getValues() {
 		return values;
 	}
 
-	/**
-	 * @param  values
-	 */
 	public void setValues(TreeMap<String, String> values) {
 		this.values = values;
 	}
@@ -96,5 +76,4 @@ public class Row implements Tuple {
 		result += "}";
 		return result;
 	}
-
 }
