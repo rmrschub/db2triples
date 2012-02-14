@@ -13,7 +13,7 @@ Released on 14/02/2012
 
 	* Big database can now be processed (ex: a MySQL database of
           1.5 Go generates 30M triples in 3 hours with native
-          triplestore method on a commodity PC. 
+          triplestore method on a commodity PC). 
 
 
 1.2 Direct Mapping: Implementation of new W3C Working Draft (of 20 September 2011)
