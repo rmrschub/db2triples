@@ -22,7 +22,7 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
-import java.util.Set;
+import java.util.HashSet;
 
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureException;
@@ -39,11 +39,10 @@ public class StdObjectMap extends AbstractTermMap implements TermMap, ObjectMap 
 	public StdObjectMap(PredicateObjectMap predicateObjectMap,
 			Value constantValue, URI dataType, String languageTag,
 			String stringTemplate, URI termType, String inverseExpression,
-			String columnValue, Set<URI> classIRIs) throws R2RMLDataError,
+			String columnValue) throws R2RMLDataError,
 			InvalidR2RMLStructureException, InvalidR2RMLSyntaxException {
-		super(constantValue, dataType,
-				languageTag, stringTemplate, termType, inverseExpression,
-				columnValue);
+		super(constantValue, dataType, languageTag, stringTemplate, termType,
+				inverseExpression, columnValue);
 		setPredicateObjectMap(predicateObjectMap);
 	}
 
@@ -62,27 +61,31 @@ public class StdObjectMap extends AbstractTermMap implements TermMap, ObjectMap 
 	protected void checkConstantValue(Value constantValue)
 			throws R2RMLDataError {
 		if (!RDFDataValidator.isValidURI(constantValue.stringValue())
-				&& !RDFDataValidator.isValidLiteral(constantValue.stringValue()))
+				&& !RDFDataValidator
+						.isValidLiteral(constantValue.stringValue()))
 			throw new R2RMLDataError(
 					"[StdObjectMap:checkConstantValue] Not a valid URI or literal : "
 							+ constantValue);
 	}
-
 
 	public PredicateObjectMap getPredicateObjectMap() {
 		return predicateObjectMap;
 	}
 
 	public void setPredicateObjectMap(PredicateObjectMap predicateObjectMap) {
-		if (predicateObjectMap.getObjectMap() != null) {
-			if (predicateObjectMap.getObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdObjectMap:setPredicateObjectMap] "
-								+ "The predicateObject map parent " +
-										"already contains another Object Map !");
-		} else {
-			// Update predicateObjectMap if not contains this object map
-			predicateObjectMap.setObjectMap(this);
+		/*
+		 * if (predicateObjectMap.getObjectMaps() != null) { if
+		 * (!predicateObjectMap.getObjectMaps().contains(this)) throw new
+		 * IllegalStateException( "[StdObjectMap:setPredicateObjectMap] " +
+		 * "The predicateObject map parent " +
+		 * "already contains another Object Map !"); } else {
+		 */
+		// Update predicateObjectMap if not contains this object map
+		if (predicateObjectMap != null) {
+			if (predicateObjectMap.getObjectMaps() == null)
+				predicateObjectMap.setObjectMaps(new HashSet<ObjectMap>());
+			predicateObjectMap.getObjectMaps().add(this);
+			// }
 		}
 		this.predicateObjectMap = predicateObjectMap;
 	}

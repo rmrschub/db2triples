@@ -33,13 +33,14 @@ public interface TriplesMap {
 	 * SQL query result to be mapped to triples.
 	 */
 	public LogicalTable getLogicalTable();
-
+	public void setLogicalTable(LogicalTable logicalTable);
+	
 	/**
 	 * It must have exactly one subject map that specifies how to generate
 	 * the subjects for each row of the logical table.
 	 */
-	public StdSubjectMap getSubjectMap();
-	public void setSubjectMap(StdSubjectMap stdSubjectMap) throws InvalidR2RMLStructureException;
+	public SubjectMap getSubjectMap();
+	public void setSubjectMap(SubjectMap stdSubjectMap) throws InvalidR2RMLStructureException;
 
 	/**
 	 * It may have zero or more rr:predicateObjectMap properties, whose values 
@@ -51,6 +52,9 @@ public interface TriplesMap {
 	 */
 	public Set<PredicateObjectMap> getPredicateObjectMaps();
 	public void addPredicateObjectMap(PredicateObjectMap predicateObjectMap);
+	
+	
+	
 
 	
 

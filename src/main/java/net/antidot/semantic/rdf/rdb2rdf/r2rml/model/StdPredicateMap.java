@@ -22,29 +22,30 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
-import java.util.Set;
+import java.util.HashSet;
 
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 
-import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
 public class StdPredicateMap extends AbstractTermMap implements TermMap,
 		PredicateMap {
-	
+
 	private PredicateObjectMap predicateObjectMap;
 
-	public StdPredicateMap(PredicateObjectMap predicateObjectMap, Value constantValue,
-			String stringTemplate, String inverseExpression,
-			String columnValue, Set<URI> classIRIs) throws R2RMLDataError,
-			InvalidR2RMLStructureException, InvalidR2RMLSyntaxException {
+	public StdPredicateMap(PredicateObjectMap predicateObjectMap,
+			Value constantValue, String stringTemplate,
+			String inverseExpression, String columnValue)
+			throws R2RMLDataError, InvalidR2RMLStructureException,
+			InvalidR2RMLSyntaxException {
 		// No Literal term type
 		// ==> No datatype
 		// ==> No specified language tag
 		// Only termType possible : IRI => by default
+		// No class IRI
 		super(constantValue, null, null, stringTemplate, null,
 				inverseExpression, columnValue);
 		setPredicateObjectMap(predicateObjectMap);
@@ -56,7 +57,7 @@ public class StdPredicateMap extends AbstractTermMap implements TermMap,
 		if (tt != TermType.IRI) {
 			throw new InvalidR2RMLStructureException(
 					"[StdPredicateMap:checkSpecificTermType] If the term map is a "
-							+ "predciate map: only rr:IRI  is required");
+							+ "predicate map: only rr:IRI  is required");
 		}
 	}
 
@@ -75,18 +76,24 @@ public class StdPredicateMap extends AbstractTermMap implements TermMap,
 	}
 
 	public void setPredicateObjectMap(PredicateObjectMap predicateObjectMap) {
-		if (predicateObjectMap.getObjectMap() != null) {
-			if (predicateObjectMap.getObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdPredicateObjectMap:setPredicateObjectMap] "
-								+ "The predicateObject map parent " +
-										"already contains another Predicate Map !");
-		} else {
+		/*
+		 * if (predicateObjectMap.getPredicateMaps() != null) { if
+		 * (!predicateObjectMap.getPredicateMaps().contains(this)) throw new
+		 * IllegalStateException(
+		 * "[StdPredicateObjectMap:setPredicateObjectMap] " +
+		 * "The predicateObject map parent " +
+		 * "already contains another Predicate Map !"); } else {
+		 */
+		if (predicateObjectMap != null) {
 			// Update predicateObjectMap if not contains this object map
-			predicateObjectMap.setPredicateMap(this);
+			if (predicateObjectMap.getPredicateMaps() == null)
+				predicateObjectMap
+						.setPredicateMaps(new HashSet<PredicateMap>());
+			predicateObjectMap.getPredicateMaps().add(this);
 		}
+		// }
 		this.predicateObjectMap = predicateObjectMap;
-	}
 
+	}
 
 }

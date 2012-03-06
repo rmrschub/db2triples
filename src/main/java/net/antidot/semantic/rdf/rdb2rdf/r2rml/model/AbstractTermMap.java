@@ -55,7 +55,7 @@ public abstract class AbstractTermMap implements TermMap {
 		if (getTermMapType() == null)
 			throw new InvalidR2RMLStructureException(
 					"[AbstractTermMap:checkGlobalConsistency] A constant RDF Term,"
-							+ " a column name or a string template must be specfied.");
+							+ " a column name or a string template must be specified.");
 	
 	}
 

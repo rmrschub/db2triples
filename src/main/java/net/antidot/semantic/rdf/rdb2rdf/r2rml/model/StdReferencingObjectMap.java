@@ -66,15 +66,12 @@ public class StdReferencingObjectMap implements ReferencingObjectMap {
 	}
 
 	public void setPredicateObjectMap(PredicateObjectMap predicateObjectMap) {
-		if (predicateObjectMap.getObjectMap() != null) {
-			if (predicateObjectMap.getObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdObjectMap:setPredicateObjectMap] "
-								+ "The predicateObject map parent "
-								+ "already contains another Object Map !");
-		} else {
-			// Update predicateObjectMap if not contains this object map
-			predicateObjectMap.setReferencingObjectMap(this);
+		// Update predicateObjectMap if not contains this object map
+		if (predicateObjectMap != null) {
+			if (predicateObjectMap.getReferencingObjectMaps() == null)
+				predicateObjectMap
+						.setReferencingObjectMap(new HashSet<ReferencingObjectMap>());
+			predicateObjectMap.getReferencingObjectMaps().add(this);
 		}
 		this.predicateObjectMap = predicateObjectMap;
 	}

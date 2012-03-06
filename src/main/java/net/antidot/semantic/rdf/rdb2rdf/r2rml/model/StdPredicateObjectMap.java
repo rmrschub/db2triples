@@ -24,71 +24,75 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class StdPredicateObjectMap implements PredicateObjectMap {
 
-	private ObjectMap objectMap;
-	private ReferencingObjectMap refObjectMap;
-	private PredicateMap predicateMap;
+	private Set<ObjectMap> objectMaps;
+	private Set<ReferencingObjectMap> refObjectMaps;
+	private Set<PredicateMap> predicateMaps;
 	protected TriplesMap ownTriplesMap;
+	private HashSet<GraphMap> graphMaps;
 
-	private StdPredicateObjectMap(PredicateMap predicateMap) {
-		this.predicateMap = predicateMap;
+	private StdPredicateObjectMap(Set<PredicateMap> predicateMaps) {
+		setPredicateMaps(predicateMaps);
 	}
 
-	public StdPredicateObjectMap(PredicateMap predicateMap, ObjectMap objectMap) {
-		this(predicateMap);
-		setObjectMap(objectMap);
+	public StdPredicateObjectMap(Set<PredicateMap> predicateMaps,
+			Set<ObjectMap> objectMaps) {
+		this(predicateMaps);
+		setObjectMaps(objectMaps);
+	}
+	
+	public StdPredicateObjectMap(Set<PredicateMap> predicateMaps,
+			Set<ObjectMap> objectMaps, Set<ReferencingObjectMap> referencingObjectMaps) {
+		this(predicateMaps, objectMaps);
+		setReferencingObjectMap(referencingObjectMaps);
 	}
 
-	public StdPredicateObjectMap(PredicateMap predicateMap,
-			ReferencingObjectMap refObjectMap) {
-		this(predicateMap);
-		setReferencingObjectMap(refObjectMap);
+	public void setReferencingObjectMap(Set<ReferencingObjectMap> refObjectMaps) {
+		if (refObjectMaps == null)
+			this.refObjectMaps = new HashSet<ReferencingObjectMap>();
+		else {
+			for (ReferencingObjectMap refObjectMap : refObjectMaps) {
+				if (refObjectMap != null)
+					refObjectMap.setPredicateObjectMap(this);
+			}
+			this.refObjectMaps = refObjectMaps;
+		}
 	}
 
-	public void setReferencingObjectMap(ReferencingObjectMap refObjectMap) {
-		if (refObjectMap.getPredicateObjectMap() != null) {
-			if (refObjectMap.getPredicateObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdPredicateObjectMap:setRefObjectMap] "
-								+ "The referencing object map child "
-								+ "already contains another PredicateObject Map !");
-		} else 
-			refObjectMap.setPredicateObjectMap(this);
-		this.refObjectMap = refObjectMap;
-		
+	public Set<ObjectMap> getObjectMaps() {
+		return objectMaps;
 	}
 
-	public ObjectMap getObjectMap() {
-		return objectMap;
+	public Set<PredicateMap> getPredicateMaps() {
+		return predicateMaps;
 	}
 
-	public PredicateMap getPredicateMap() {
-		return predicateMap;
+	public Set<ReferencingObjectMap> getReferencingObjectMaps() {
+		return refObjectMaps;
 	}
 
-	public ReferencingObjectMap getReferencingObjectMap() {
-		return refObjectMap;
-	}
-
-	public boolean hasReferencingObjectMap() {
-		return refObjectMap != null;
+	public boolean hasReferencingObjectMaps() {
+		return refObjectMaps != null && !refObjectMaps.isEmpty();
 	}
 
 	public TriplesMap getOwnTriplesMap() {
 		return ownTriplesMap;
 	}
 
-	public void setObjectMap(ObjectMap objectMap) {
-		if (objectMap.getPredicateObjectMap() != null) {
-			if (objectMap.getPredicateObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdPredicateObjectMap:setObjectMap] "
-								+ "The object map child "
-								+ "already contains another PredicateObject Map !");
-		} else 
-			objectMap.setPredicateObjectMap(this);
-		this.objectMap = objectMap;
+	public void setObjectMaps(Set<ObjectMap> objectMaps) {
+		if (objectMaps == null)
+			this.objectMaps = new HashSet<ObjectMap>();
+		else {
+			for (ObjectMap objectMap : objectMaps) {
+				if (objectMap != null)
+					objectMap.setPredicateObjectMap(this);
+			}
+			this.objectMaps = objectMaps;
+		}
 	}
 
 	public void setOwnTriplesMap(TriplesMap ownTriplesMap) {
@@ -99,16 +103,25 @@ public class StdPredicateObjectMap implements PredicateObjectMap {
 		this.ownTriplesMap = ownTriplesMap;
 	}
 
-	public void setPredicateMap(PredicateMap predicateMap) {
-		if (predicateMap.getPredicateObjectMap() != null) {
-			if (predicateMap.getPredicateObjectMap() != this)
-				throw new IllegalStateException(
-						"[StdPredicateObjectMap:setPredicateMap] "
-								+ "The predicate map child "
-								+ "already contains another PredicateObject Map !");
-		} else 
-			predicateMap.setPredicateObjectMap(this);
-		this.predicateMap = predicateMap;
+	public void setPredicateMaps(Set<PredicateMap> predicateMaps) {
+		if (predicateMaps == null)
+			this.predicateMaps = new HashSet<PredicateMap>();
+		else {
+			for (PredicateMap predicateMap : predicateMaps) {
+				if (predicateMap != null)
+					predicateMap.setPredicateObjectMap(this);
+			}
+			this.predicateMaps = predicateMaps;
+		}
+	}
+	
+	public Set<GraphMap> getGraphMaps() {
+		return graphMaps;
+	}
+	
+	public void setGraphMaps(Set<GraphMap> graphMaps) {
+		this.graphMaps = new HashSet<GraphMap>();
+		graphMaps.addAll(graphMaps);
 	}
 
 }

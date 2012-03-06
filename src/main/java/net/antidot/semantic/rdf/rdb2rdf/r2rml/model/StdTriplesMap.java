@@ -30,7 +30,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureExc
 public class StdTriplesMap implements TriplesMap {
 
 	private Set<PredicateObjectMap> predicateObjectMaps;
-	private StdSubjectMap subjectMap;
+	private SubjectMap subjectMap;
 	private LogicalTable logicalTable;
 
 	public StdTriplesMap(LogicalTable logicalTable,
@@ -42,18 +42,17 @@ public class StdTriplesMap implements TriplesMap {
 
 	}
 
-	private void setLogicalTable(LogicalTable logicalTable)
-			throws InvalidR2RMLStructureException {
+	public void setLogicalTable(LogicalTable logicalTable) {
 		/*if (logicalTable == null)
 			throw new InvalidR2RMLStructureException(
 					"[StdTriplesMap:setLogicalTable] A logical table is required.");*/
 		this.logicalTable = logicalTable;
 	}
 
-	private void setPredicateObjectMap(
+	public void setPredicateObjectMap(
 			Set<StdPredicateObjectMap> predicateObjectMaps) {
-		if (predicateObjectMaps == null) return;
 		this.predicateObjectMaps = new HashSet<PredicateObjectMap>();
+		if (predicateObjectMaps == null) return;
 		this.predicateObjectMaps.addAll(predicateObjectMaps);
 		// Update prediacte object map
 		for (PredicateObjectMap pom : predicateObjectMaps) {
@@ -76,11 +75,11 @@ public class StdTriplesMap implements TriplesMap {
 		return predicateObjectMaps;
 	}
 
-	public StdSubjectMap getSubjectMap() {
+	public SubjectMap getSubjectMap() {
 		return subjectMap;
 	}
 
-	public void setSubjectMap(StdSubjectMap subjectMap) throws InvalidR2RMLStructureException {
+	public void setSubjectMap(SubjectMap subjectMap) throws InvalidR2RMLStructureException {
 		/*if (subjectMap == null)
 			throw new InvalidR2RMLStructureException(
 					"[StdTriplesMap:setLogicalTable] A subject map is required.");*/

@@ -76,8 +76,10 @@ public class StdSubjectMap extends AbstractTermMap implements SubjectMap {
 
 	private void setClassIRIs(Set<URI> classIRIs2) throws R2RMLDataError {
 		this.classIRIs = new HashSet<URI>();
-		checkClassIRIs(classIRIs);
-		classIRIs.addAll(classIRIs2);
+		if (classIRIs2 != null) {
+			checkClassIRIs(classIRIs);
+			classIRIs.addAll(classIRIs2);
+		}
 	}
 
 	private void checkClassIRIs(Set<URI> classIRIs2) throws R2RMLDataError {
