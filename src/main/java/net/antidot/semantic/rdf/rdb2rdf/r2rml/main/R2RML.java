@@ -25,7 +25,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
-import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLMapper;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
 import net.antidot.sql.model.core.SQLConnector;
 
 import org.apache.commons.cli.CommandLine;
@@ -226,7 +226,7 @@ public class R2RML {
 												" option to force loading of " +
 												"existing repository.");
 				}
-				R2RMLMapper.convertMySQLDatabase(conn,
+				R2RMLProcessor.convertMySQLDatabase(conn,
 						r2rmlFile,
 						nativeOutput);
 			} else {
@@ -247,7 +247,7 @@ public class R2RML {
 										+ " already exists. It will be removed" +
 												" during operation (option -r)..");
 				}
-				SesameDataSet sesameDataSet = R2RMLMapper.convertMySQLDatabase(
+				SesameDataSet sesameDataSet = R2RMLProcessor.convertMySQLDatabase(
 						conn, r2rmlFile,
 						nativeOutput);
 				// Dump graph

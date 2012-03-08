@@ -24,26 +24,28 @@ import java.sql.SQLException;
 import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.R2RMLMapping;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class R2RMLMapper {
+public abstract class R2RMLProcessor {
 	
 	// Log
-	private static Log log = LogFactory.getLog(R2RMLMapper.class);
+	private static Log log = LogFactory.getLog(R2RMLProcessor.class);
 	
 	private static Long start = 0l;
 	
 	/**
-	 * Convert a MySQL database into a RDF graph from a database Connection
+	 * Convert a database into a RDF graph from a database Connection
 	 * and a R2RML instance (with native storage).
+	 * @throws R2RMLDataError 
 	 */
-	public static SesameDataSet convertMySQLDatabase(Connection conn,
-			String pathToR2RMLMappingDocument, String pathToNativeStore) throws InstantiationException,
-			IllegalAccessException, ClassNotFoundException, SQLException {
-		if (log.isInfoEnabled()) log.info("[R2RMLMapper:convertMySQLDatabase] Start Mapping R2RML...");
+	public static SesameDataSet convertDatabase(Connection conn,
+			String pathToR2RMLMappingDocument, String baseIRI, String pathToNativeStore) throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, SQLException, R2RMLDataError {
+		log.info("[R2RMLMapper:convertMySQLDatabase] Start Mapping R2RML...");
 		// Init time
 		start = System.currentTimeMillis();
 		// Extract R2RML Mapping object
@@ -62,12 +64,12 @@ public abstract class R2RMLMapper {
 		}
 		// Connect database
 		R2RMLEngine r2rmlEngine = new R2RMLEngine(conn);
-		SesameDataSet result =  r2rmlEngine.runR2RMLMapping(r2rmlMapping, pathToNativeStore);
-		if (log.isInfoEnabled()) log.info("[R2RMLMapper:convertMySQLDatabase] Mapping R2RML done.");
+		SesameDataSet result =  r2rmlEngine.runR2RMLMapping(r2rmlMapping, baseIRI, pathToNativeStore);
+		log.info("[R2RMLMapper:convertDatabase] Mapping R2RML done.");
 		Float stop = Float.valueOf(System.currentTimeMillis() - start) / 1000;
-		if (log.isInfoEnabled()) log.info("[DirectMapper:convertDatabase] Database extracted in "
+		log.info("[DirectMapper:convertDatabase] Database extracted in "
 				+ stop + " seconds.");
-		if (log.isInfoEnabled()) log.info("[DirectMapper:convertDatabase] Number of extracted triples : " +
+		log.info("[DirectMapper:convertDatabase] Number of extracted triples : " +
 				result.getSize());
 		return result;
 	}
@@ -75,11 +77,12 @@ public abstract class R2RMLMapper {
 	/**
 	 * Convert a MySQL database into a RDF graph from a database Connection
 	 * and a R2RML instance.
+	 * @throws R2RMLDataError 
 	 */
-	public static SesameDataSet convertMySQLDatabase(Connection conn,
-			String pathToR2RMLMappingDocument) throws InstantiationException,
-			IllegalAccessException, ClassNotFoundException, SQLException {
-		return convertMySQLDatabase(conn, pathToR2RMLMappingDocument, null);
+	public static SesameDataSet convertDatabase(Connection conn,
+			String pathToR2RMLMappingDocument,  String baseIRI) throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, SQLException, R2RMLDataError {
+		return convertDatabase(conn, pathToR2RMLMappingDocument, baseIRI, null);
 	}
 
 

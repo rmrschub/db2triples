@@ -1,6 +1,7 @@
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
@@ -12,12 +13,16 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDType;
 import net.antidot.sql.model.tools.SQLDataValidator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
 public abstract class AbstractTermMap implements TermMap {
 
-	
+	// Log
+	private static Log log = LogFactory.getLog(AbstractTermMap.class);
+
 	private Value constantValue;
 	private XSDType dataType;
 	private TermType termType;
@@ -35,15 +40,16 @@ public abstract class AbstractTermMap implements TermMap {
 
 		setConstantValue(constantValue);
 		setColumnValue(columnValue);
-		setDataType(dataType);
 		setLanguageTag(languageTag);
 		setStringTemplate(stringTemplate);
-		setTermType(termType);
+		setTermType(termType, dataType);
+		setDataType(dataType);
+		
+		
 		setInversionExpression(inverseExpression);
 		checkGlobalConsistency();
 	}
 
-	
 	/**
 	 * Check if the global structure of this TermMap is consistent and valid
 	 * according to R2RML standard.
@@ -53,10 +59,13 @@ public abstract class AbstractTermMap implements TermMap {
 	private void checkGlobalConsistency() throws InvalidR2RMLStructureException {
 		// A term map must be exactly one term map type
 		if (getTermMapType() == null)
-			throw new InvalidR2RMLStructureException(
-					"[AbstractTermMap:checkGlobalConsistency] A constant RDF Term,"
-							+ " a column name or a string template must be specified.");
-	
+			// In db2triples and contrary to the R2RML norm, we accepts
+			// auto-assignments of blank nodes.
+			if (getTermType() != TermType.BLANK_NODE)
+				throw new InvalidR2RMLStructureException(
+						"[AbstractTermMap:checkGlobalConsistency] A constant RDF Term,"
+								+ " a column name or a string template must be specified.");
+
 	}
 
 	private void setInversionExpression(String inverseExpression)
@@ -93,17 +102,30 @@ public abstract class AbstractTermMap implements TermMap {
 							+ "value : " + termType);
 	}
 
-	protected void setTermType(URI termType) throws InvalidR2RMLSyntaxException,
-			R2RMLDataError, InvalidR2RMLStructureException {
+	protected void setTermType(URI termType, URI dataType)
+			throws InvalidR2RMLSyntaxException, R2RMLDataError,
+			InvalidR2RMLStructureException {
 		if (termType == null) {
-			// If the term map does not have a rr:termType property
-			// then its term type is IRI (expect for object Map)
-			this.termType = TermType.IRI;
+			// If the term map does not have a rr:termType property :
+			// rr:Literal by default, if it is an object map and at 
+			// least one of the following conditions is true
+			if (getColumnValue() != null || dataType != null || getLanguageTag() != null) {
+				this.termType = TermType.LITERAL;
+				log
+						.warn("[AbstractTermMap:setTermType] No term type specified : use Literal by default.");
+			} else {
+				// otherwise its term type is IRI 
+				this.termType = TermType.IRI;
+				log
+						.warn("[AbstractTermMap:setTermType] No term type specified : use IRI by default.");
+			}
+			
+		} else {
+			TermType tt = null;
+			if (termType != null)
+				tt = checkTermType(termType);
+			this.termType = tt;
 		}
-		TermType tt = null;
-		if (termType != null)
-			tt = checkTermType(termType);
-		this.termType = tt;
 	}
 
 	private TermType checkTermType(URI termType)
@@ -134,7 +156,7 @@ public abstract class AbstractTermMap implements TermMap {
 		// valid string template.
 		if (stringTemplate != null)
 			checkStringTemplate(stringTemplate);
-		
+
 		this.stringTemplate = stringTemplate;
 	}
 
@@ -196,7 +218,7 @@ public abstract class AbstractTermMap implements TermMap {
 	 */
 	public void checkDataType(URI dataType) throws R2RMLDataError {
 		// Its value MUST be an IRI
-		if (!RDFDataValidator.isValidURI(dataType.stringValue()))
+		if (!RDFDataValidator.isValidDatatype(dataType.stringValue()))
 			throw new R2RMLDataError(
 					"[AbstractTermMap:checkDataType] Not a valid URI : "
 							+ dataType);
@@ -204,7 +226,7 @@ public abstract class AbstractTermMap implements TermMap {
 
 	public void setDataType(URI dataType) throws R2RMLDataError,
 			InvalidR2RMLStructureException {
-		if (!isTypeable() && dataType != null) 
+		if (!isTypeable() && dataType != null)
 			throw new InvalidR2RMLStructureException(
 					"[AbstractTermMap:setDataType] A term map that is not "
 							+ "a typeable term map MUST NOT have an rr:datatype"
@@ -256,6 +278,7 @@ public abstract class AbstractTermMap implements TermMap {
 			// The referenced columns of a column-valued term map is
 			// the singleton set containing the value of rr:column.
 			referencedColumns.add(columnValue);
+			break;
 
 		case TEMPLATE_VALUED:
 			// The referenced columns of a template-valued term map is
@@ -263,6 +286,7 @@ public abstract class AbstractTermMap implements TermMap {
 			// in the template string.
 			referencedColumns.addAll(R2RMLToolkit
 					.extractColumnNamesFromStringTemplate(stringTemplate));
+			break;
 
 		default:
 			break;
@@ -281,6 +305,8 @@ public abstract class AbstractTermMap implements TermMap {
 			return TermMapType.COLUMN_VALUED;
 		else if (stringTemplate != null)
 			return TermMapType.TEMPLATE_VALUED;
+		else if (termType == TermType.BLANK_NODE)
+			return TermMapType.NO_VALUE_FOR_BNODE;
 		return null;
 	}
 
@@ -307,6 +333,26 @@ public abstract class AbstractTermMap implements TermMap {
 
 	public void setImplicitDataType(XSDType implicitDataType) {
 		this.implicitDataType = implicitDataType;
+	}
+
+	public String getValue(Map<String, String> dbValues) {
+		log
+				.debug("[AbstractTermMap:getValue] Extract value of termType with termMapType : "
+						+ getTermMapType());
+		switch (getTermMapType()) {
+		case CONSTANT_VALUED:
+			return constantValue.stringValue();
+
+		case COLUMN_VALUED:
+			return dbValues.get(columnValue);
+
+		case TEMPLATE_VALUED:
+			return R2RMLToolkit.extractColumnValueFromStringTemplate(
+					stringTemplate, dbValues);
+
+		default:
+			return null;
+		}
 	}
 
 }

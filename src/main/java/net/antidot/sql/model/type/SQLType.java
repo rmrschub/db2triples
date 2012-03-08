@@ -110,6 +110,14 @@ public enum SQLType {
 		result.add(SQLType.BINARY_LARGE_OBJECT);
 		return result;
 	}
+	
+	public static ArrayList<SQLType> getStringTypes() {
+		ArrayList<SQLType> result = new ArrayList<SQLType>();
+		result.add(CHAR);
+		result.add(VARCHAR);
+		result.add(STRING);
+		return result;
+	}
 
 	public boolean isDateType() {
 		return getDateTypes().contains(this);
@@ -121,6 +129,10 @@ public enum SQLType {
 	
 	public boolean isBinaryType() {
 		return getBlobTypes().contains(this);
+	}
+	
+	public boolean isStringType() {
+		return getStringTypes().contains(this);
 	}
 	
 	public boolean isCastable(){

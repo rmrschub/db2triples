@@ -36,6 +36,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.PredicateMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.PredicateObjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.R2RMLMapping;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.ReferencingObjectMap;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdGraphMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdJoinCondition;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdObjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdPredicateMap;
@@ -192,10 +193,15 @@ public abstract class R2RMLMappingFactory {
 				+ R2RMLTerm.SUBJECT_MAP);
 		List<Statement> statements = r2rmlMappingGraph.tuplePattern(null, p,
 				null);
-		if (statements.isEmpty())
-			throw new InvalidR2RMLStructureException(
-					"[R2RMLMappingFactory:extractR2RMLMapping]"
-							+ " One subject statement is required.");
+		if (statements.isEmpty()) {
+			log
+					.warn("[R2RMLMappingFactory:extractR2RMLMapping] No subject statement found. Exit...");
+		}
+		/*
+		 * throw new InvalidR2RMLStructureException(
+		 * "[R2RMLMappingFactory:extractR2RMLMapping]" +
+		 * " One subject statement is required.");
+		 */
 		else
 			// No subject map, Many shortcuts subjects
 			for (Statement s : statements) {
@@ -308,6 +314,8 @@ public abstract class R2RMLMappingFactory {
 				PredicateObjectMap predicateObjectMap = extractPredicateObjectMap(
 						r2rmlMappingGraph, (Resource) statement.getObject(),
 						graphMaps, triplesMapResources);
+				// Add own tripleMap to predicateObjectMap
+				predicateObjectMap.setOwnTriplesMap(result);
 				predicateObjectMaps.add(predicateObjectMap);
 			}
 		} catch (ClassCastException e) {
@@ -399,16 +407,16 @@ public abstract class R2RMLMappingFactory {
 				// Create associated graphMap if it has not already created
 				boolean found = false;
 				GraphMap graphMapFound = null;
-				for (GraphMap savedGraphMap : savedGraphMaps)
-					if (savedGraphMap.getGraph().equals(graphMap)) {
-						found = true;
-						graphMapFound = savedGraphMap;
-					}
+				/*
+				 * for (GraphMap savedGraphMap : savedGraphMaps) if
+				 * (savedGraphMap.getGraph().equals(graphMap)) { found = true;
+				 * graphMapFound = savedGraphMap; }
+				 */
 				if (found)
 					graphMaps.add(graphMapFound);
 				else {
 					GraphMap newGraphMap = extractGraphMap(r2rmlMappingGraph,
-							graphMap);
+							(Resource) graphMap);
 					savedGraphMaps.add(newGraphMap);
 					graphMaps.add(newGraphMap);
 				}
@@ -459,7 +467,8 @@ public abstract class R2RMLMappingFactory {
 			throw new InvalidR2RMLStructureException(
 					"[R2RMLMappingFactory:extractReferencingObjectMap] "
 							+ object.stringValue()
-							+ " reference to parent triples maps is broken : " + parentTriplesMap.stringValue() + " not found.");
+							+ " reference to parent triples maps is broken : "
+							+ parentTriplesMap.stringValue() + " not found.");
 		}
 		// Link between this reerencing object and its triplesMap parent will be
 		// performed
@@ -528,7 +537,7 @@ public abstract class R2RMLMappingFactory {
 				object, R2RMLTerm.INVERSE_EXPRESSION);
 		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
 				object, R2RMLTerm.COLUMN);
-			StdObjectMap result = new StdObjectMap(null, constantValue, dataType,
+		StdObjectMap result = new StdObjectMap(null, constantValue, dataType,
 				languageTag, stringTemplate, termType, inverseExpression,
 				columnValue);
 		log
@@ -631,16 +640,16 @@ public abstract class R2RMLMappingFactory {
 				// Create associated graphMap if it has not already created
 				boolean found = false;
 				GraphMap graphMapFound = null;
-				for (GraphMap savedGraphMap : savedGraphMaps)
-					if (savedGraphMap.getGraph().equals(graphMap)) {
-						found = true;
-						graphMapFound = savedGraphMap;
-					}
+				/*
+				 * for (GraphMap savedGraphMap : savedGraphMaps) if
+				 * (savedGraphMap.getGraph().equals(graphMap)) { found = true;
+				 * graphMapFound = savedGraphMap; }
+				 */
 				if (found)
 					graphMaps.add(graphMapFound);
 				else {
 					GraphMap newGraphMap = extractGraphMap(r2rmlMappingGraph,
-							graphMap);
+							(Resource) graphMap);
 					savedGraphMaps.add(newGraphMap);
 					graphMaps.add(newGraphMap);
 				}
@@ -649,16 +658,30 @@ public abstract class R2RMLMappingFactory {
 				stringTemplate, termType, inverseExpression, columnValue,
 				classIRIs, graphMaps);
 		log
-				.debug("[R2RMLMappingFactory:extractSubjectMap] Subject map extracted : "
-						+ result);
+				.debug("[R2RMLMappingFactory:extractSubjectMap] Subject map extracted.");
 		return result;
 	}
 
 	private static GraphMap extractGraphMap(SesameDataSet r2rmlMappingGraph,
-			Value graphMap) {
+			Resource graphMap) throws InvalidR2RMLStructureException,
+			R2RMLDataError, InvalidR2RMLSyntaxException {
+		log
+				.debug("[R2RMLMappingFactory:extractPredicateObjectMaps] Extract graph map...");
 
-		// TODO Auto-generated method stub
-		return null;
+		Value constantValue = extractValueFromTermMap(r2rmlMappingGraph,
+				graphMap, R2RMLTerm.CONSTANT);
+		String stringTemplate = extractLiteralFromTermMap(r2rmlMappingGraph,
+				graphMap, R2RMLTerm.TEMPLATE);
+		String inverseExpression = extractLiteralFromTermMap(r2rmlMappingGraph,
+				graphMap, R2RMLTerm.INVERSE_EXPRESSION);
+		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
+				graphMap, R2RMLTerm.COLUMN);
+
+		GraphMap result = new StdGraphMap(constantValue, stringTemplate,
+				inverseExpression, columnValue);
+		log
+				.debug("[R2RMLMappingFactory:extractPredicateObjectMaps] Graph map extracted.");
+		return result;
 	}
 
 	/**

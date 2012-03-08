@@ -18,7 +18,10 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.tools;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 public abstract class R2RMLToolkit {
 
@@ -70,10 +73,41 @@ public abstract class R2RMLToolkit {
 		return true;
 	}
 
+	/**
+	 * Extracts column names referenced by enclosing them in curly braces (“{”
+	 * and “}”) in a string template.
+	 * 
+	 * @param stringTemplate
+	 * @return
+	 */
 	public static Set<String> extractColumnNamesFromStringTemplate(
 			String stringTemplate) {
-		// TODO
-		return null;
+		Set<String> result = new HashSet<String>();
+		if (stringTemplate != null) {
+			StringTokenizer st = new StringTokenizer(stringTemplate, "{}");
+			while (st.hasMoreElements()) {
+				String element = st.nextElement().toString();
+				int index = stringTemplate.indexOf(element);
+				if (index > 0
+						&& index < stringTemplate.length()
+						&& stringTemplate.charAt(index - 1) == '{'
+						&& (stringTemplate.charAt(index + element.length()) == '}')) {
+					result.add(element);
+				}
+			}
+		}
+		return result;
+	}
+
+	public static String extractColumnValueFromStringTemplate(
+			String stringTemplate, Map<String, String> dbValues) {
+		String result = stringTemplate;
+		if (dbValues == null)
+			return null;
+		for (String column : dbValues.keySet()) {
+			result = result.replaceAll("\\{" + column + "\\}", dbValues.get(column));
+		}
+		return result;
 	}
 
 }

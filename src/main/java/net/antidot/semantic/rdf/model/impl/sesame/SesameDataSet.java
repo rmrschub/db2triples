@@ -446,7 +446,7 @@ public class SesameDataSet {
 		OutputStream output;
 		try {
 			output = new FileOutputStream(filePath);
-			
+
 			dumpRDF(output, outform);
 			try {
 				output.close();
@@ -459,14 +459,13 @@ public class SesameDataSet {
 
 	}
 
-	
 	public String printRDF(RDFFormat outform) {
 		try {
 			RepositoryConnection con = currentRepository.getConnection();
 			try {
-				ByteArrayOutputStream out = new ByteArrayOutputStream(); 
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				RDFWriter w = Rio.createWriter(outform, out);
-				
+
 				con.export(w);
 				String result = new String(out.toByteArray(), "UTF-8");
 				return result;
@@ -672,6 +671,25 @@ public class SesameDataSet {
 			result += o + System.getProperty("line.separator");
 		result += "}";
 		return result;
+	}
+
+	/**
+	 * Add directly a statement object.
+	 */
+	public void addStatement(Statement s) {
+		add(s.getSubject(), s.getPredicate(), s.getObject(), s.getContext());
+	}
+
+	public boolean isEqualTo(SesameDataSet dataSet) {
+		List<Statement> triples = tuplePattern(null, null, null);
+		for (Statement triple : triples) {
+			List<Statement> targetTriples = dataSet.tuplePattern(triple
+					.getSubject(), triple.getPredicate(), triple.getObject(),
+					triple.getContext());
+			log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+			if (targetTriples.size() != 1) return false;
+		}
+		return dataSet.getSize() == getSize();
 	}
 
 }

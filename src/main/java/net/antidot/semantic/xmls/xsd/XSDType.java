@@ -122,5 +122,13 @@ public enum XSDType {
 		return type.equals(DATETIME) || type.equals(DATE);
 	}
 	
+	/**
+	 * Return absolute URI of this XSD type in a string format.
+	 * @return
+	 */
+	public String getAbsoluteStringURI(){
+		return XSDType.XSD_NAMESPACE + toString();
+	}
+	
 	
 }

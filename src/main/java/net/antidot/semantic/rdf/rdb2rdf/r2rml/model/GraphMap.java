@@ -33,5 +33,5 @@ public interface GraphMap extends TermMap {
 	/**
 	 * A graph map is associated with a graph URI.
 	 */
-	public URI getGraph();
+	//public URI getGraph();
 }

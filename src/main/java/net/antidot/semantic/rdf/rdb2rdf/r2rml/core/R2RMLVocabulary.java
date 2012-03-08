@@ -79,8 +79,11 @@ public class R2RMLVocabulary {
 		DEFAULT_GRAPH("defaultGraph"),
 		IRI("IRI"),
 		BLANK_NODE("BlankNode"),
-		LITERAL("Literal");
-	
+		LITERAL("Literal"),
+		
+		//FROM ANOTHER ONTOLOGY
+		TYPE("type");
+		
 		private String displayName;
 	
 		private R2RMLTerm(String displayName) {

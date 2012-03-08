@@ -24,7 +24,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
-import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLMapper;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
 import net.antidot.sql.model.core.SQLConnector;
 
 import org.apache.commons.logging.Log;
@@ -68,7 +68,7 @@ public class R2RMLTools {
 		try {
 			conn = SQLConnector.connect(userName, password, url, driver, dbName);
 			// Generate RDF graph
-			SesameDataSet g = R2RMLMapper.convertMySQLDatabase(conn, r2rmlFile);
+			SesameDataSet g = R2RMLProcessor.convertMySQLDatabase(conn, r2rmlFile);
 			// Return string
 			String result = g.printRDF(rdfFormat);
 			return result;

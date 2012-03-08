@@ -71,7 +71,8 @@ public class StdSubjectMap extends AbstractTermMap implements SubjectMap {
 
 	private void setGraphMaps(Set<GraphMap> graphMaps) {
 		this.graphMaps = new HashSet<GraphMap>();
-		graphMaps.addAll(graphMaps);
+		if (graphMaps != null)
+			this.graphMaps.addAll(graphMaps);
 	}
 
 	private void setClassIRIs(Set<URI> classIRIs2) throws R2RMLDataError {
@@ -130,7 +131,7 @@ public class StdSubjectMap extends AbstractTermMap implements SubjectMap {
 			result += uri.getLocalName() + ",";
 		result += "], graphMaps = [";
 		for (GraphMap graphMap : graphMaps)
-			result += graphMap.getGraph().getLocalName() + ",";
+			result += graphMap + ",";
 		result += "]]";
 		return result;
 	}
