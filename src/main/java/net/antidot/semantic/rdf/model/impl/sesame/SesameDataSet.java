@@ -15,14 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
  *
  * RDF Sesame DataSet
  *
  * Represents a RDF Graph using Sesame API. 
- *
- * @author jhomo
  *
  */
 package net.antidot.semantic.rdf.model.impl.sesame;
@@ -132,7 +129,6 @@ public class SesameDataSet {
 		try {
 			currentRepository.initialize();
 		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -153,26 +149,20 @@ public class SesameDataSet {
 				// upload a file
 				File f = new File(filePath);
 				con.add(f, null, format, contexts);
-
 			} catch (RDFParseException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (RepositoryException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				try {
 					con.close();
 				} catch (RepositoryException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		} catch (RepositoryException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
@@ -187,24 +177,19 @@ public class SesameDataSet {
 				con.add(url, null, RDFFormat.RDFXML);
 
 			} catch (RDFParseException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (RepositoryException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				try {
 					con.close();
 				} catch (RepositoryException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		} catch (RepositoryException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
@@ -588,8 +573,7 @@ public class SesameDataSet {
 
 	/**
 	 * Execute CONSTRUCT/DESCRIBE SPARQL queries against the graph from a SPARQL
-	 * request file. This file contains only one request. // TODO : up this
-	 * limit
+	 * request file. This file contains only one request.
 	 * 
 	 * @param pathToFile
 	 *            path to SPARQL request file
@@ -619,7 +603,7 @@ public class SesameDataSet {
 
 	/**
 	 * Execute SELECT SPARQL queries against the graph from a SPARQL request
-	 * file. This file contains only one request. // TODO : up this limit
+	 * file. This file contains only one request.
 	 * 
 	 * @param pathToFile
 	 *            path to SPARQL request file
@@ -682,6 +666,7 @@ public class SesameDataSet {
 	
 	public boolean isBNode(Value value){
 		try {
+			@SuppressWarnings("unused")
 			BNode test = (BNode) value;
 			return true;
 		} catch (ClassCastException e) {
@@ -693,52 +678,80 @@ public class SesameDataSet {
 		List<Statement> triples = tuplePattern(null, null, null);
 		for (Statement triple : triples) {
 			List<Statement> targetTriples = new ArrayList<Statement>();
-			if (isBNode(triple.getSubject())){
-				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), triple.getObject(),
+			if (isBNode(triple.getSubject()) && isBNode(triple.getObject())) {
+				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), null,
 						triple.getContext());
-				if (targetTriples.size() > 1) {
-					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
-					return false;
-				} else if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result.");
-					return false;
-				} else if (!isBNode(targetTriples.get(0).getSubject())) {
-					log.debug("[SesameDataSet:isEqualTo] BNode subject conflict detected : " + targetTriples.get(0).getSubject());
+				if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
 					return false;
 				} else {
-					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+					boolean found = false;
+					Statement foundTriple = null;
+					for (Statement targetTriple : targetTriples){
+						if (isBNode(targetTriple.getSubject()) && isBNode(targetTriple.getObject())) {
+							found = true;
+							foundTriple = targetTriple;
+							break;
+						}
+					}
+					if (found) {
+						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+					} else {
+						log.debug("[SesameDataSet:isEqualTo] No BNode subject and BNode object found for " + triple);
+						return false;
+					}
 				}
+			} else if (isBNode(triple.getSubject())){
+				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), triple.getObject(),
+						triple.getContext());
+				if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result.");
+					return false;
+				} else {
+					boolean found = false;
+					Statement foundTriple = null;
+					for (Statement targetTriple : targetTriples){
+						if (isBNode(targetTriple.getSubject())) {
+							found = true;
+							foundTriple = targetTriple;
+							break;
+						}
+					}
+					if (found) {
+						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+					} else {
+						log.debug("[SesameDataSet:isEqualTo] No BNode subject found for " + triple);
+						return false;
+					}
+				}
+			
 			} else if (isBNode(triple.getObject())) {
 				targetTriples = dataSet.tuplePattern(triple
 						.getSubject(), triple.getPredicate(), null,
 						triple.getContext());
-				if (targetTriples.size() > 1) {
-					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
-					return false;
-				} else if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result.");
-					return false;
-				} else if (!isBNode(targetTriples.get(0).getObject())) {
-					log.debug("[SesameDataSet:isEqualTo] BNode object conflict detected : " + targetTriples.get(0).getObject());
+				if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
 					return false;
 				} else {
-					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
-				}
-			} else if (isBNode(triple.getSubject()) && isBNode(triple.getObject())) {
-				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), null,
-						triple.getContext());
-				if (targetTriples.size() > 1) {
-					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
-					return false;
-				} else if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result.");
-					return false;
-				} else if (!(isBNode(targetTriples.get(0).getSubject()) && isBNode(targetTriples.get(0).getObject()))) {
-					log.debug("[SesameDataSet:isEqualTo] BNode subject and object conflict detected.");
-					return false;
-				} else {
-					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
-				}
+					boolean found = false;
+					Statement foundTriple = null;
+					for (Statement targetTriple : targetTriples){
+						if (isBNode(targetTriple.getObject())) {
+							found = true;
+							foundTriple = targetTriple;
+							break;
+						}
+					}
+					if (found) {
+						
+						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+					} else {
+						log
+						.debug("[SesameDataSet:isEqualTo] No BNode object found for "
+								+ triple);
+						return false;
+					}
+				} 
 			} else {
 				targetTriples = dataSet.tuplePattern(triple
 						.getSubject(), triple.getPredicate(), triple.getObject(),
@@ -747,7 +760,7 @@ public class SesameDataSet {
 					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
 					return false;
 				} else if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result.");
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
 					return false;
 				} else {
 					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));

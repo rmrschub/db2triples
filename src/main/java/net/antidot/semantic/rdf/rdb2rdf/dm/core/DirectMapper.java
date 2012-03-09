@@ -23,9 +23,6 @@
  * Its goal consists to extracts generic tuples of a given database in cursor
  * mode and to convert every of them. 
  *
- * @author jhomo
- *
- *
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.dm.core;
 

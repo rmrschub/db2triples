@@ -24,8 +24,6 @@
  * 
  * Reference : R2RML: RDB to RDF Mapping Language, W3C Working Draft 24 March 2011
  *
- * @author jhomo
- *
  */
 package net.antidot.semantic.rdf.model.impl.sesame;
 
