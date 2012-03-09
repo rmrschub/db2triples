@@ -679,15 +679,80 @@ public class SesameDataSet {
 	public void addStatement(Statement s) {
 		add(s.getSubject(), s.getPredicate(), s.getObject(), s.getContext());
 	}
+	
+	public boolean isBNode(Value value){
+		try {
+			BNode test = (BNode) value;
+			return true;
+		} catch (ClassCastException e) {
+			return false;
+		}
+	}
 
 	public boolean isEqualTo(SesameDataSet dataSet) {
 		List<Statement> triples = tuplePattern(null, null, null);
 		for (Statement triple : triples) {
-			List<Statement> targetTriples = dataSet.tuplePattern(triple
-					.getSubject(), triple.getPredicate(), triple.getObject(),
-					triple.getContext());
-			log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
-			if (targetTriples.size() != 1) return false;
+			List<Statement> targetTriples = new ArrayList<Statement>();
+			if (isBNode(triple.getSubject())){
+				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), triple.getObject(),
+						triple.getContext());
+				if (targetTriples.size() > 1) {
+					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
+					return false;
+				} else if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result.");
+					return false;
+				} else if (!isBNode(targetTriples.get(0).getSubject())) {
+					log.debug("[SesameDataSet:isEqualTo] BNode subject conflict detected : " + targetTriples.get(0).getSubject());
+					return false;
+				} else {
+					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+				}
+			} else if (isBNode(triple.getObject())) {
+				targetTriples = dataSet.tuplePattern(triple
+						.getSubject(), triple.getPredicate(), null,
+						triple.getContext());
+				if (targetTriples.size() > 1) {
+					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
+					return false;
+				} else if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result.");
+					return false;
+				} else if (!isBNode(targetTriples.get(0).getObject())) {
+					log.debug("[SesameDataSet:isEqualTo] BNode object conflict detected : " + targetTriples.get(0).getObject());
+					return false;
+				} else {
+					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+				}
+			} else if (isBNode(triple.getSubject()) && isBNode(triple.getObject())) {
+				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), null,
+						triple.getContext());
+				if (targetTriples.size() > 1) {
+					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
+					return false;
+				} else if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result.");
+					return false;
+				} else if (!(isBNode(targetTriples.get(0).getSubject()) && isBNode(targetTriples.get(0).getObject()))) {
+					log.debug("[SesameDataSet:isEqualTo] BNode subject and object conflict detected.");
+					return false;
+				} else {
+					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+				}
+			} else {
+				targetTriples = dataSet.tuplePattern(triple
+						.getSubject(), triple.getPredicate(), triple.getObject(),
+						triple.getContext());
+				if (targetTriples.size() > 1) {
+					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
+					return false;
+				} else if (targetTriples.isEmpty()) {
+					log.debug("[SesameDataSet:isEqualTo] No result.");
+					return false;
+				} else {
+					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+				}
+			}
 		}
 		return dataSet.getSize() == getSize();
 	}

@@ -52,6 +52,7 @@ public abstract class SQLToXMLS {
 		equivalentTypes.put(SQLType.TIMESTAMP, XSDType.DATETIME);
 		equivalentTypes.put(SQLType.VARCHAR, XSDType.STRING);
 		equivalentTypes.put(SQLType.CHAR, XSDType.STRING);
+		equivalentTypes.put(SQLType.STRING, XSDType.STRING);
 	}
 	
 	public static XSDType getEquivalentType(SQLType sqlType){
