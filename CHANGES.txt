@@ -1,0 +1,114 @@
+Release Notes db2triples v0.9.5
+Released on 14/02/2012
+
+
+
+1. New features
+
+1.1 Direct Mapping: Cursor mode
+
+- New database extraction method based on JDBC cursor mode 
+
+	* Rows of databases tables are processed one by one. It considerably reduces memory usage.
+
+	* Big database can now be processed (ex: a MySQL database of
+          1.5 Go generates 30M triples in 3 hours with native
+          triplestore method on a commodity PC). 
+
+
+1.2 Direct Mapping: Implementation of new W3C Working Draft (of 20 September 2011)
+
+	* Syntax of URIs is now normalized
+
+	* Datatypes treatments are now normalized (in a generic SQL formalism)
+
+	* Any DBMS can now be mapped with its specific driver (tested only on MySQL and PostGreSQL at this time)
+
+	* "XMLSchema base64 encoding" mentioned in literal map
+          definition of W3C Working Draft of 20 September 2011 is not
+          yet supported.
+
+2. Improvements
+
+2.1 Direct Mapping
+
+- Implementation Version to be used can now be selected (between the
+  Working Draft of 23 March 2011 and the Working Draft of 20 September
+  2011)
+
+	* New parameter "version" can be specified
+
+- Add support for PostGreSQL (for W3C Working Draft 23 March 2011)
+
+	* Use value "org.postgresql.Driver" in "driver" parameter
+
+2.2 SQL Database Model
+
+- Model completed with new generic interfaces
+
+	* Allow compatibility with cursor mode and several Direct Mapping implementations
+
+2.3 SQL Types Management
+
+- SQL types are distinguished in two categories "generic types" and "specific types"
+
+	* Open Direct Mapping implementations to all DBMS
+	
+	* Includes compatibility with version of 23 March 2011
+
+	* Includes compatibility with new Working Draft of R2RML (of 20 September 2011) 
+
+2.4 XMLSchema Types Management
+
+- XMLSchema datatype conversions are adapted for generic SQL datatypes.
+
+2.5 Miscellaneous
+
+- Direct Mapping console interface Improvement
+	
+	* Normalization of parameters name
+
+- "@author" tags have been removed
+
+
+3. Bug fixes
+
+- Fixes an issue where blank nodes links for empty (non-existent) primary key were broken
+
+	* References to section 2.4.4 in "A Direct Mapping of Relational Data to RDF" (W3C Working Draft 24 March 2011)
+
+	* References to section 2.5 in "A Direct Mapping of Relational Data to RDF" (W3C Working Draft 20 September 2011)
+
+	* References to tables rows with no primary key are expressed
+          as RDF triples with blank nodes for objects, where this
+          blank node is the same node used for the subject in the
+          referenced row. [ouch!]
+
+
+Appendix: New parameters of Direct Mapping
+
+ -b,--database <database_name>        database name
+ -d,--driver <driver>                 Driver to use (default:
+                                      com.mysql.jdbc.Driver )
+ -f                                   Force loading of existing repository
+                                      (without remove data)
+ -i,--base_uri <base_uri>             Base URI (default:
+                                      http://foo.example/DB/)
+ -l,--url <url>                       Database URL (default:
+                                      jdbc:mysql://localhost/)
+ -m,--format <format>                 RDF syntax output format ('RDFXML',
+                                      'N3', 'NTRIPLES' or 'TURTLE')
+ -n,--native_output <nativeOutput>    Native store output directory
+ -o,--output <output>                 Output RDF filename (default:
+                                      output)
+ -p,--pass <password>                 Database password
+ -q,--sparql_output <sparql_output>   Transformed graph output file
+                                      (optional if sparql option is not
+                                      specified, default: sparql_output
+                                      otherwise)
+ -s,--sparql <sparql>                 Sparql transform request file
+                                      (optional)
+ -u,--user <user_name>                Database user name
+ -v,--version <version>               Version of norm to use (1 = Working
+                                      Draft 20 September 2011 (default), 2
+                                      = Working Draft 23 March 2011)
