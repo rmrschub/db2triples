@@ -56,8 +56,11 @@ public interface TriplesMap {
 	public Set<PredicateObjectMap> getPredicateObjectMaps();
 	public void addPredicateObjectMap(PredicateObjectMap predicateObjectMap);
 	
-	
-	
+	/**
+	 * The triplesMap name.
+	 */
+	public String getName();
+	public void setName(String name);
 
 	
 

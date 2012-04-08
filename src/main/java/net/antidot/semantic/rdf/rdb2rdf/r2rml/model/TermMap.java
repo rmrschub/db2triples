@@ -26,10 +26,14 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
+import java.io.UnsupportedEncodingException;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
-import net.antidot.semantic.rdf.rdb2rdf.commons.RDFTransformation;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
+import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
 
 import org.openrdf.model.Value;
@@ -125,7 +129,7 @@ public interface TermMap {
 	/**
 	 * A typeable term map has an implicit datatype and an implicit transform.
 	 */
-	public RDFTransformation.Transformation getImplicitTransformation();
+	public XSDLexicalTransformation.Transformation getImplicitTransformation();
 
 	/**
 	 * An inverse expression is a string template associated with a
@@ -140,6 +144,9 @@ public interface TermMap {
 	public String getInverseExpression();
 
 	/**
+	 * @throws UnsupportedEncodingException 
+	 * @throws SQLException 
+	 * @throws R2RMLDataError 
 	 * The generated RDF term of a term map for a given logical table row is
 	 * determined as follows: If the term map is a constant-valued term map,
 	 * then the generated RDF term is the term map's constant value. If the term
@@ -151,7 +158,8 @@ public interface TermMap {
 	 * 
 	 * @param dbValues
 	 * @return
+	 * @throws  
 	 */
-	public String getValue(Map<String, String> dbValues);
+	public String getValue(Map<String, byte[]> dbValues, ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException, UnsupportedEncodingException;
 
 }

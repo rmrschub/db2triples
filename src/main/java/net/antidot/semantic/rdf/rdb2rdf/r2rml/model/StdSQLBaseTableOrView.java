@@ -42,6 +42,7 @@ public class StdSQLBaseTableOrView implements SQLBaseTableOrView {
 			throw new InvalidR2RMLSyntaxException(
 					"[StdStdSQLBaseTableOrView:construct] Table name must be a valid schema-qualified"
 							+ " name.");
+		//this.tableName = R2RMLToolkit.deleteBackSlash(tableName);
 		this.tableName = tableName;
 	}
 

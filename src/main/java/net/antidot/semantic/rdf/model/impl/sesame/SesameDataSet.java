@@ -139,58 +139,42 @@ public class SesameDataSet {
 	 * @param filePath
 	 * @param format
 	 * @param contexts
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws RDFParseException
 	 */
 	public void loadDataFromFile(String filePath, RDFFormat format,
-			Resource... contexts) {
-		RepositoryConnection con;
+			Resource... contexts) throws RepositoryException,
+			RDFParseException, IOException {
+		RepositoryConnection con = null;
 		try {
 			con = currentRepository.getConnection();
+			// upload a file
+			File f = new File(filePath);
+			con.add(f, null, format, contexts);
+		} finally {
 			try {
-				// upload a file
-				File f = new File(filePath);
-				con.add(f, null, format, contexts);
-			} catch (RDFParseException e) {
-				e.printStackTrace();
+				con.close();
 			} catch (RepositoryException e) {
 				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					con.close();
-				} catch (RepositoryException e) {
-					e.printStackTrace();
-				}
 			}
-		} catch (RepositoryException e1) {
-			e1.printStackTrace();
 		}
+
 	}
 
-	public void loadDataFromURL(String stringURL) {
-		RepositoryConnection con;
+	public void loadDataFromURL(String stringURL) throws RepositoryException, RDFParseException, IOException {
+		RepositoryConnection con = null;
 		try {
 			con = currentRepository.getConnection();
-			try {
 				// upload a URL
 				URL url = new URL(stringURL);
 				con.add(url, null, RDFFormat.RDFXML);
-
-			} catch (RDFParseException e) {
-				e.printStackTrace();
+		} finally {
+			try {
+				con.close();
 			} catch (RepositoryException e) {
 				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					con.close();
-				} catch (RepositoryException e) {
-					e.printStackTrace();
-				}
 			}
-		} catch (RepositoryException e1) {
-			e1.printStackTrace();
 		}
 	}
 
@@ -382,9 +366,7 @@ public class SesameDataSet {
 			try {
 				URL url = new URL(urlstring);
 				URLConnection uricon = (URLConnection) url.openConnection();
-				uricon
-						.addRequestProperty("accept", format
-								.getDefaultMIMEType());
+				uricon.addRequestProperty("accept", format.getDefaultMIMEType());
 				InputStream instream = uricon.getInputStream();
 				con.add(instream, urlstring, format);
 			} finally {
@@ -663,8 +645,8 @@ public class SesameDataSet {
 	public void addStatement(Statement s) {
 		add(s.getSubject(), s.getPredicate(), s.getObject(), s.getContext());
 	}
-	
-	public boolean isBNode(Value value){
+
+	public boolean isBNode(Value value) {
 		try {
 			@SuppressWarnings("unused")
 			BNode test = (BNode) value;
@@ -679,38 +661,44 @@ public class SesameDataSet {
 		for (Statement triple : triples) {
 			List<Statement> targetTriples = new ArrayList<Statement>();
 			if (isBNode(triple.getSubject()) && isBNode(triple.getObject())) {
-				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), null,
-						triple.getContext());
+				targetTriples = dataSet.tuplePattern(null,
+						triple.getPredicate(), null, triple.getContext());
 				if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : "
+							+ triple);
 					return false;
 				} else {
 					boolean found = false;
 					Statement foundTriple = null;
-					for (Statement targetTriple : targetTriples){
-						if (isBNode(targetTriple.getSubject()) && isBNode(targetTriple.getObject())) {
+					for (Statement targetTriple : targetTriples) {
+						if (isBNode(targetTriple.getSubject())
+								&& isBNode(targetTriple.getObject())) {
 							found = true;
 							foundTriple = targetTriple;
 							break;
 						}
 					}
 					if (found) {
-						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+						log.debug("[SesameDataSet:isEqualTo] " + triple
+								+ " == " + foundTriple);
 					} else {
-						log.debug("[SesameDataSet:isEqualTo] No BNode subject and BNode object found for " + triple);
+						log.debug("[SesameDataSet:isEqualTo] No BNode subject and BNode object found for "
+								+ triple);
 						return false;
 					}
 				}
-			} else if (isBNode(triple.getSubject())){
-				targetTriples = dataSet.tuplePattern(null, triple.getPredicate(), triple.getObject(),
+			} else if (isBNode(triple.getSubject())) {
+				targetTriples = dataSet.tuplePattern(null,
+						triple.getPredicate(), triple.getObject(),
 						triple.getContext());
 				if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result.");
+					log.debug("[SesameDataSet:isEqualTo] No result for subject : "
+							+ triple);
 					return false;
 				} else {
 					boolean found = false;
 					Statement foundTriple = null;
-					for (Statement targetTriple : targetTriples){
+					for (Statement targetTriple : targetTriples) {
 						if (isBNode(targetTriple.getSubject())) {
 							found = true;
 							foundTriple = targetTriple;
@@ -718,24 +706,26 @@ public class SesameDataSet {
 						}
 					}
 					if (found) {
-						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+						log.debug("[SesameDataSet:isEqualTo] " + triple
+								+ " == " + foundTriple);
 					} else {
-						log.debug("[SesameDataSet:isEqualTo] No BNode subject found for " + triple);
+						log.debug("[SesameDataSet:isEqualTo] No BNode subject found for "
+								+ triple);
 						return false;
 					}
 				}
-			
+
 			} else if (isBNode(triple.getObject())) {
-				targetTriples = dataSet.tuplePattern(triple
-						.getSubject(), triple.getPredicate(), null,
-						triple.getContext());
+				targetTriples = dataSet.tuplePattern(triple.getSubject(),
+						triple.getPredicate(), null, triple.getContext());
 				if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : "
+							+ triple);
 					return false;
 				} else {
 					boolean found = false;
 					Statement foundTriple = null;
-					for (Statement targetTriple : targetTriples){
+					for (Statement targetTriple : targetTriples) {
 						if (isBNode(targetTriple.getObject())) {
 							found = true;
 							foundTriple = targetTriple;
@@ -743,30 +733,36 @@ public class SesameDataSet {
 						}
 					}
 					if (found) {
-						
-						log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + foundTriple);
+
+						log.debug("[SesameDataSet:isEqualTo] " + triple
+								+ " == " + foundTriple);
 					} else {
-						log
-						.debug("[SesameDataSet:isEqualTo] No BNode object found for "
+						log.debug("[SesameDataSet:isEqualTo] No BNode object found for "
 								+ triple);
 						return false;
 					}
-				} 
+				}
 			} else {
-				targetTriples = dataSet.tuplePattern(triple
-						.getSubject(), triple.getPredicate(), triple.getObject(),
+				targetTriples = dataSet.tuplePattern(triple.getSubject(),
+						triple.getPredicate(), triple.getObject(),
 						triple.getContext());
 				if (targetTriples.size() > 1) {
-					log.debug("[SesameDataSet:isEqualTo] Too many result for : " + triple);
+					log.debug("[SesameDataSet:isEqualTo] Too many result for : "
+							+ triple);
 					return false;
 				} else if (targetTriples.isEmpty()) {
-					log.debug("[SesameDataSet:isEqualTo] No result for triple : " + triple);
+					log.debug("[SesameDataSet:isEqualTo] No result for triple : "
+							+ triple);
 					return false;
 				} else {
-					log.debug("[SesameDataSet:isEqualTo] " + triple + " == " + targetTriples.get(0));
+					log.debug("[SesameDataSet:isEqualTo] " + triple + " == "
+							+ targetTriples.get(0));
 				}
 			}
 		}
+		if (dataSet.getSize() != getSize())
+			log.debug("[SesameDataSet:isEqualTo] No same size : "
+					+ dataSet.getSize() + " != " + getSize());
 		return dataSet.getSize() == getSize();
 	}
 

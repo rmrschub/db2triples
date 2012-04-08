@@ -66,14 +66,16 @@ public interface DirectMappingEngine {
 	 * @param headers
 	 * @param primaryKeys
 	 * @param foreignKeys
-	 * @param tableName
+	 * @param tableName 
 	 * @param driver
 	 * @param timeZone
+	 * @param index 
 	 * @return
+	 * @throws UnsupportedEncodingException 
 	 */
 	public Tuple extractTupleFrom(ResultSet values, ResultSet headers,
 			ResultSet primaryKeys, ResultSet foreignKeys, String tableName,
-			String driver, String timeZone);
+			String driver, String timeZone, int index) throws UnsupportedEncodingException;
 
 	/**
 	 * Extract a generic referenced tuple from generic JDBC sets.
@@ -86,14 +88,15 @@ public interface DirectMappingEngine {
 	 * @param driver
 	 * @param timeZone
 	 * @return
+	 * @throws UnsupportedEncodingException 
 	 */
 	public Tuple extractReferencedTupleFrom(ResultSet values,
 			ResultSet headers, ResultSet primaryKeys, ResultSet foreignKeys,
-			String tableName, String driver, String timeZone);
+			String tableName, String driver, String timeZone, int index) throws UnsupportedEncodingException;
 
 	/**
 	 * Construct the SQL Query depending on current norm used for construct tuples.
-	 * @param driver
+	 * @param driver 
 	 * @param headersSet
 	 * @param tableName
 	 * @return

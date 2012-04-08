@@ -27,7 +27,6 @@
 package net.antidot.semantic.rdf.rdb2rdf.dm.core;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -40,7 +39,10 @@ import net.antidot.semantic.rdf.model.impl.sesame.SemiStatement;
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
 import net.antidot.semantic.rdf.rdb2rdf.commons.RDFPrefixes;
 import net.antidot.semantic.rdf.rdb2rdf.commons.SQLToXMLS;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
+import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.core.SQLConnector;
 import net.antidot.sql.model.db.CandidateKey;
 import net.antidot.sql.model.db.ForeignKey;
 import net.antidot.sql.model.db.Key;
@@ -62,7 +64,6 @@ import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;
 
-
 public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 
 	// Log
@@ -78,7 +79,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 
 	// Sesame valueFactory which generates values like litterals or URI
 	private ValueFactory vf;
-	
+
 	// IRI characters used in rules
 	private static char solidus = '/';
 	private static char fullStop = '.';
@@ -104,7 +105,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	 */
 	public Tuple extractTupleFrom(ResultSet valueSet, ResultSet headerSet,
 			ResultSet primaryKeysSet, ResultSet foreignKeysSet,
-			String tableName, String driver, String timeZone) {
+			String tableName, String driver, String timeZone, int index)
+			throws UnsupportedEncodingException {
 		if (tableName != currentTableName)
 			// First table treatment
 			// Get datatypes
@@ -115,7 +117,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 			throw new IllegalStateException(
 					"[DirectMappingEngine:extractTupleFrom] One of mandatory elements for tuple's building is missing.");
 		// Extract row
-		Row result = extractRow(driver, header, tableName, valueSet, timeZone);
+		Row result = extractRow(driver, header, tableName, valueSet, timeZone,
+				index);
 		// Attach context to this row
 		buildTmpModel(result, tableName, header, primaryKeys, foreignKeys);
 		return result;
@@ -144,7 +147,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	public Tuple extractReferencedTupleFrom(ResultSet valueSet,
 			ResultSet headerSet, ResultSet primaryKeysSet,
 			ResultSet foreignKeysSet, String tableName, String driver,
-			String timeZone) {
+			String timeZone, int index) throws UnsupportedEncodingException {
 		// Get datatypes
 		LinkedHashMap<String, String> referencedDatatypes = extractDatatypes(
 				headerSet, tableName);
@@ -160,7 +163,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 					"[DirectMappingEngine:extractTupleFrom] One of mandatory elements for tuple's building is missing.");
 		// Extract row
 		Row result = extractRow(driver, referencedHeader, tableName, valueSet,
-				timeZone);
+				timeZone, index);
 		// Attach context to this row
 		buildTmpModel(result, tableName, referencedHeader,
 				referencedPrimaryKeys, referencedForeignKeys);
@@ -177,8 +180,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		rows.add(row);
 		StdBody body = new StdBody(rows, null);
 		// Create table
-		StdTable table = new StdTable(tableName, header, primaryKeys, foreignKeys,
-				body);
+		StdTable table = new StdTable(tableName, header, primaryKeys,
+				foreignKeys, body);
 		// Link objects
 		body.setParentTable(table);
 		row.setParentBody(body);
@@ -188,26 +191,24 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	 * Extract a row from values datasets and its model.
 	 */
 	private Row extractRow(String driver, StdHeader header, String tableName,
-			ResultSet valueSet, String timeZone) {
-		TreeMap<String, String> values = new TreeMap<String, String>();
+			ResultSet valueSet, String timeZone, int index)
+			throws UnsupportedEncodingException {
+		TreeMap<String, byte[]> values = new TreeMap<String, byte[]>();
 		for (String columnName : header.getColumnNames()) {
 			try {
-				String value = null;
-				SQLType type = SQLType.toSQLType(Integer.valueOf(header.getDatatypes().get(columnName)));
-				if (type.isCastable())
-					value = valueSet.getString(SQLType.getSQLCastQuery(type, "`" + columnName + "`"));
-				else
-					value = valueSet.getString(SQLType.getSQLCastQuery(type, columnName));
+				byte[] value = null;
+				// SQLType type =
+				// SQLType.toSQLType(Integer.valueOf(header.getDatatypes().get(columnName)));
+				value = valueSet.getBytes(columnName);
 				values.put(columnName, value);
 			} catch (SQLException e) {
-				log.error("[TupleExtractor:extractRow] SQL Error during row extraction");
+				log.error("[DirectMappingEngine:extractRow] SQL Error during row extraction");
 				e.printStackTrace();
 			}
 		}
-		Row row = new Row(values, null);
+		Row row = new Row(values, null, index);
 		return row;
 	}
-
 
 	/*
 	 * Extract datatypes from a table and its header set.
@@ -223,24 +224,23 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 				datatypes.put(column, type);
 			}
 		} catch (SQLException e) {
-				log.error("[TupleExtractor:extractDatatypes] SQL Error during datatype's tuples extraction");
+			log.error("[DirectMappingEngine:extractDatatypes] SQL Error during datatype's tuples extraction");
 			e.printStackTrace();
 		}
 		return datatypes;
 	}
-	
+
 	/*
 	 * Check blob types. This type is not supported in this working draft.
 	 */
-	private void checkBlobType(String type, String tableName, String column){
+	private void checkBlobType(String type, String tableName, String column) {
 		if (SQLType.toSQLType(Integer.valueOf(type)).isBlobType())
-			log
-					.warn("[DirectMapper:checkBlobType] WARNING Table "
-							+ tableName
-							+ ", column "
-							+ column
-							+ " Forbidden BLOB type (binary stream not supported in XSD)"
-							+ " => this column will be ignored.");
+			log.warn("[DirectMapper:checkBlobType] WARNING Table "
+					+ tableName
+					+ ", column "
+					+ column
+					+ " Forbidden BLOB type (binary stream not supported in XSD)"
+					+ " => this column will be ignored.");
 	}
 
 	/*
@@ -261,7 +261,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 				columnNames.add(columnName);
 			}
 		} catch (SQLException e) {
-			log.error("[DirectMappingEngineWD20110324:extractTupleFrom] SQL Error during primary key of tuples extraction");
+			log.error("[DirectMappingEngine:extractPrimaryKeys] SQL Error during primary key of tuples extraction");
 			e.printStackTrace();
 		}
 		// Sort columns
@@ -298,6 +298,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 				String pkTableName;
 				// Foreign key infos
 				pkTableName = foreignKeysSet.getString("PKTABLE_NAME");
+
 				String pkColumnName = foreignKeysSet.getString("PKCOLUMN_NAME");
 				String fkTableName = foreignKeysSet.getString("FKTABLE_NAME");
 				String fkColumnName = foreignKeysSet.getString("FKCOLUMN_NAME");
@@ -305,7 +306,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 				// Consistency test
 				if (!fkTableName.equals(tableName))
 					throw new IllegalStateException(
-							"[SQLConnection:extractDatabase] Unconsistency between source "
+							"[DirectMappingEngine:extractForeignKeys] Unconsistency between source "
 									+ "table of foreign key and current table : "
 									+ tableName + " != " + fkTableName);
 
@@ -314,8 +315,6 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 					// New foreign key => store last key
 					storeForeignKey(foreignKeys, fkColumnNames, pkColumnNames,
 							tableName, currentPkTableName);
-					// TODO : check if this value is the same for another
-					// SGBD than MySQL
 					fkColumnNames = new ArrayList<String>();
 					pkColumnNames = new ArrayList<String>();
 				}
@@ -329,8 +328,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 
 		} catch (SQLException e) {
 			if (log.isErrorEnabled())
-				log
-						.error("[DirectMappingEngineWD20110324:extractTupleFrom] SQL Error during foreign keys of tuples extraction");
+				log.error("[DirectMappingEngine:extractForeignKeys] SQL Error during foreign keys of tuples extraction");
 			e.printStackTrace();
 		}
 		return foreignKeys;
@@ -342,6 +340,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	private void storeForeignKey(HashSet<ForeignKey> foreignKeys,
 			ArrayList<String> fkColumnNames, ArrayList<String> pkColumnNames,
 			String tableName, String currentPkTableName) {
+		log.debug("[DirectMappingEngine:storeForeignKey] Store foreign key : "
+				+ pkColumnNames);
 		if (fkColumnNames.size() != 0)
 			foreignKeys.add(new ForeignKey(fkColumnNames, tableName,
 					new CandidateKey(pkColumnNames, currentPkTableName,
@@ -349,7 +349,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	}
 
 	/*
-	 * Construct SQL Query from database sets in order to extract row from its table.
+	 * Construct SQL Query from database sets in order to extract row from its
+	 * table.
 	 */
 	public String constructSQLQuery(String driver, ResultSet headersSet,
 			String tableName) {
@@ -362,29 +363,36 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		for (String columnName : header.getColumnNames()) {
 			i++;
 			// Extract SQL date format in a ISO 8601 format
-			SQLType type = SQLType.toSQLType(Integer.valueOf(header.getDatatypes().get(
-					columnName)));
+			SQLType type = SQLType.toSQLType(Integer.valueOf(header
+					.getDatatypes().get(columnName)));
 			if (type == null) {
 				throw new IllegalStateException(
-						"[DirectMappingEngineWD20110324:constructSQLQuery] Unknown SQL type : "
+						"[DirectMappingEngine:constructSQLQuery] Unknown SQL type : "
 								+ header.getDatatypes().get(columnName)
 								+ " from column : " + columnName);
 			}
 			if (type == SQLType.UNKNOWN) {
-					log.warn("[DirectMappingEngineWD20110324:constructSQLQuery] Unknown SQL type : "
-									+ header.getDatatypes().get(columnName)
-									+ " from column : " + columnName);
+				log.warn("[DirectMappingEngine:constructSQLQuery] Unknown SQL type : "
+						+ header.getDatatypes().get(columnName)
+						+ " from column : " + columnName);
 			}
-			SQLQuery += SQLType.getSQLCastQuery(type, "`" + columnName  + "`");
+			if (driver.equals(SQLConnector.mysqlDriver))
+				SQLQuery += "`" + columnName + "`";
+			else
+				SQLQuery += "\"" + columnName + "\"";
 			if (i < header.getColumnNames().size())
 				SQLQuery += ", ";
 		}
-		SQLQuery += " FROM `" + tableName + "`;";
+		if (driver.equals(SQLConnector.mysqlDriver))
+			SQLQuery += " FROM `" + tableName + "`;";
+		else
+			SQLQuery += " FROM \"" + tableName + "\";";
 		return SQLQuery;
 	}
 
 	/*
-	 * Construct SQL Query from database sets in order to extract row from its table.
+	 * Construct SQL Query from database sets in order to extract row from its
+	 * table.
 	 */
 	public String constructReferencedSQLQuery(String driver,
 			ResultSet headersSet, String tableName, Key key, Tuple tuple) {
@@ -401,33 +409,50 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		for (String columnName : header.getColumnNames()) {
 			i++;
 			// Extract SQL date format in a ISO 8601 format
-			SQLType type = SQLType.toSQLType(Integer.valueOf(header.getDatatypes().get(
-					columnName)));
+			SQLType type = SQLType.toSQLType(Integer.valueOf(header
+					.getDatatypes().get(columnName)));
 			if (type == null) {
 				throw new IllegalStateException(
-						"[DirectMappingEngineWD20110324:constructSQLQuery] Unknown SQL type : "
+						"[DirectMappingEngine:constructSQLQuery] Unknown SQL type : "
 								+ header.getDatatypes().get(columnName)
 								+ " from column : " + columnName);
 			}
 			if (type == SQLType.UNKNOWN) {
 				if (log.isWarnEnabled())
-					log
-							.warn("[DirectMappingEngineWD20110324:constructSQLQuery] Unknown SQL type : "
-									+ header.getDatatypes().get(columnName)
-									+ " from column : " + columnName);
+					log.warn("[DirectMappingEngine:constructSQLQuery] Unknown SQL type : "
+							+ header.getDatatypes().get(columnName)
+							+ " from column : " + columnName);
 			}
-			SQLQuery += SQLType.getSQLCastQuery(type, "`" + columnName  + "`");
+			if (driver.equals(SQLConnector.mysqlDriver))
+				SQLQuery += "`" + columnName + "`";
+			else
+				SQLQuery += "\"" + columnName + "\"";
 			if (i < header.getColumnNames().size())
 				SQLQuery += ", ";
 		}
-		SQLQuery += " FROM `" + tableName + "`";
+		if (driver.equals(SQLConnector.mysqlDriver))
+			SQLQuery += " FROM `" + tableName + "`";
+		else
+			SQLQuery += " FROM \"" + tableName + "\"";
 		// WHERE clause
 		SQLQuery += " WHERE ";
 		int j = 0;
 		ArrayList<String> columnNames = fk.getReferenceKey().getColumnNames();
 		for (String columnName : columnNames) {
-			SQLQuery += "`" + columnName + "` = '"
-					+ r.getValues().get(fk.getColumnNames().get(j)) + "'";
+			String value = r.getValues().get(fk.getColumnNames().get(j));
+			if (value == null) {
+				// Always use IS NULL to look for NULL values.
+				if (driver.equals(SQLConnector.mysqlDriver))
+					SQLQuery += "`" + columnName + "` IS NULL";
+				else
+					SQLQuery += "\"" + columnName + "\" IS NULL";
+			} else {
+				if (driver.equals(SQLConnector.mysqlDriver))
+					SQLQuery += "`" + columnName + "` = '" + value + "'";
+				else
+					SQLQuery += "\"" + columnName + "\" = '" + value + "'";
+			}
+				
 			j++;
 			if (j < columnNames.size())
 				SQLQuery += " AND ";
@@ -448,7 +473,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	private Resource phi(StdTable t, Row r, String baseURI)
 			throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
-			log.debug("[DirectMapper:phi] Table : " + t);
+			log.debug("[DirectMappingEngine:phi] Table : " + t);
 		CandidateKey primaryKey = t.getPrimaryKey();
 		if (primaryKey != null) {
 			// Unique Node IRI
@@ -461,18 +486,19 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 			return bnode;
 		}
 	}
-	
+
 	/*
 	 * Phi function for referenced rows (in particular for blank node mangement)
 	 */
 	private Resource phi(StdTable t, Row row, Row referencedRow, String baseURI)
 			throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
-			log.debug("[DirectMapper:phi] Table : " + t);
+			log.debug("[DirectMappingEngine:phi] Table : " + t);
 		CandidateKey primaryKey = t.getPrimaryKey();
 		if (primaryKey != null) {
 			// Unique Node IRI
-			String stringURI = generateUniqNodeIRI(referencedRow, t, primaryKey, baseURI);
+			String stringURI = generateUniqNodeIRI(referencedRow, t,
+					primaryKey, baseURI);
 			URI uri = vf.createURI(baseURI, stringURI);
 			// URIs.put(r, uri);
 			return uri;
@@ -482,47 +508,69 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 			return bnode;
 		}
 	}
-	
+
 	/*
-	 * Generate IRI name from databse information.
+	 * Percent encode
 	 */
-	private String generateUniqNodeIRI(Row r, StdTable t, CandidateKey primaryKey, String baseURI) throws UnsupportedEncodingException{
-		String stringURI = URLEncoder.encode(t.getTableName(), DirectMappingEngine.encoding) + solidus;
+	private String percentEncode(String value, boolean isAttributeName,
+			boolean isAttributeValue) {
+		// Replace the string with the IRI-safe form of that character per
+		// section 7.3 of [R2RML].
+		String result = R2RMLToolkit.getIRISafeVersion(value);
+		// For attribute names, replace each HYPHEN-MINUS character ('-',
+		// U+003d) with the string "%3D".
+		if (isAttributeName)
+			result = result.replaceAll("\\-", "%3D");
+		// For attribute values, replace each FULL STOP character ('.', U+002e)
+		// with the string "%2E".
+		if (isAttributeValue)
+			result = result.replaceAll("\\-", "%2E");
+		return result;
+	}
+
+	/*
+	 * Generate IRI name from database information.
+	 */
+	private String generateUniqNodeIRI(Row r, StdTable t,
+			CandidateKey primaryKey, String baseURI)
+			throws UnsupportedEncodingException {
+		String stringURI = percentEncode(t.getTableName(), false, false)
+				+ solidus;
 		int i = 0;
 		for (String columnName : primaryKey.getColumnNames()) {
 			i++;
-			stringURI += columnName + hyphenMinus
-					+ r.getValues().get(columnName);
+			stringURI += percentEncode(columnName, true, false) + hyphenMinus
+					+ percentEncode(r.getValues().get(columnName), false, true);
 			if (i < primaryKey.getColumnNames().size())
 				stringURI += ".";
 		}
 		// Check URI syntax
 		if (!RDFDataValidator.isValidURI(baseURI + stringURI)) {
 			if (log.isWarnEnabled())
-				log.warn("[DirectMapper:phi] This URI is not valid : "
+				log.warn("[DirectMappingEngine:phi] This URI is not valid : "
 						+ baseURI + stringURI);
 		}
 		return stringURI;
 	}
-	
+
 	/*
-	 * Generate blank name (useful for link row and referenced key in case of empty primary key).
+	 * Generate blank name (useful for link row and referenced key in case of
+	 * empty primary key).
 	 */
-	private  String generateUniqBlankNodeName(Row r) throws UnsupportedEncodingException{
-		String blankNodeUniqName = "";
+	private String generateUniqBlankNodeName(Row r)
+			throws UnsupportedEncodingException {
+		String blankNodeUniqName = r.getIndex() + "-";
 		int i = 1;
 		for (String columnName : r.getValues().keySet()) {
-			blankNodeUniqName += URLEncoder.encode(columnName, DirectMappingEngine.encoding)
+			blankNodeUniqName += percentEncode(columnName, true, false)
 					+ hyphenMinus
-					+ URLEncoder.encode(r.getValues().get(columnName),
-							DirectMappingEngine.encoding);
+					+ percentEncode(r.getValues().get(columnName), false, true);
 			if (i < r.getValues().size())
 				blankNodeUniqName += fullStop;
 			i++;
 		}
 		return blankNodeUniqName;
 	}
-
 
 	/*
 	 * Primary-is-Candidate-Key Exception If the primary key is also a candidate
@@ -538,7 +586,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 
 		String saveTableName = referencedRow.getParentBody().getParentTable()
 				.getTableName();
-		StdTable referencedTable = referencedRow.getParentBody().getParentTable();
+		StdTable referencedTable = referencedRow.getParentBody()
+				.getParentTable();
 		referencedTable.setTableName(fk.getTargetTableName());
 
 		Resource s = phi(referencedTable, referencedRow, baseURI);
@@ -554,11 +603,12 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	}
 
 	/*
-	 * Denotational semantics function : convert foreign key columns
-	 * into a triple with mapped (predicate, object).
+	 * Denotational semantics function : convert foreign key columns into a
+	 * triple with mapped (predicate, object).
 	 */
 	private HashSet<SemiStatement> convertRef(Row row, Row referencedRow,
 			ForeignKey fk, String baseURI) throws UnsupportedEncodingException {
+		log.debug("[DirectMappingEngine:convertRef] Row : " + row);
 		HashSet<SemiStatement> result = new HashSet<SemiStatement>();
 		ArrayList<String> columnNames = new ArrayList<String>();
 		columnNames.addAll(fk.getColumnNames());
@@ -579,14 +629,14 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	public HashSet<Statement> extractTriplesFrom(Tuple t,
 			HashMap<Key, Tuple> referencedTuples, Key primaryIsForeignKey,
 			String baseURI) throws UnsupportedEncodingException {
-			log.debug("[DirectMapper:convertRow] Tuple : " + t
-					+ ", referencedTuples : " + referencedTuples);
+		log.debug("[DirectMappingEngine:extractTriplesFrom] Tuple : " + t
+				+ ", referencedTuples : " + referencedTuples);
 		// Explicit conversion
 		Row r = (Row) t;
 		HashMap<ForeignKey, Row> referencedRows = new HashMap<ForeignKey, Row>();
 		for (Key key : referencedTuples.keySet()) {
-			referencedRows.put((ForeignKey) key, (Row) referencedTuples
-					.get(key));
+			referencedRows.put((ForeignKey) key,
+					(Row) referencedTuples.get(key));
 		}
 		ForeignKey primaryIsFk = (ForeignKey) primaryIsForeignKey;
 		HashSet<Statement> result = new HashSet<Statement>();
@@ -614,27 +664,28 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 			}
 		}
 		for (ForeignKey fk : referencedRows.keySet()) {
-			HashSet<SemiStatement> refTriples = convertRef(r, referencedRows
-					.get(fk), fk, baseURI);
+			HashSet<SemiStatement> refTriples = convertRef(r,
+					referencedRows.get(fk), fk, baseURI);
 			for (SemiStatement refTriple : refTriples) {
 				tmpResult.add(refTriple);
 			}
 		}
 		// Construct ref triples with correct subject
 		for (SemiStatement refSemiTriple : tmpResult) {
-			Statement triple = vf.createStatement(s, refSemiTriple
-					.getPredicate(), refSemiTriple.getObject());
+			Statement triple = vf.createStatement(s,
+					refSemiTriple.getPredicate(), refSemiTriple.getObject());
 			if (triple != null)
 				result.add(triple);
 		}
 		// Literal Triples
-		// Difference with preceding Working Draft : even unary foreign key are converted.
+		// Difference with preceding Working Draft : even unary foreign key are
+		// converted.
 		for (String columnName : currentTable.getHeader().getColumnNames()) {
 			Statement triple = convertLex(currentTable.getHeader(), r,
 					columnName, baseURI);
 			if (triple != null) {
-				result.add(vf.createStatement(s, triple.getPredicate(), triple
-						.getObject()));
+				result.add(vf.createStatement(s, triple.getPredicate(),
+						triple.getObject()));
 			}
 		}
 		// Update current table
@@ -649,24 +700,26 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	/*
 	 * Convert type predicate from a row.
 	 */
-	private Statement convertType(Resource s, String baseURI, StdTable currentTable) {
+	private Statement convertType(Resource s, String baseURI,
+			StdTable currentTable) {
 		// Table Triples
 		URI typePredicate = vf.createURI(RDFPrefixes.prefix.get("rdf"), "type");
-		URI typeObject = vf.createURI(baseURI, currentTable.getTableName());
+		URI typeObject = vf.createURI(baseURI,
+				percentEncode(currentTable.getTableName(), false, false));
 		Statement typeTriple = vf.createStatement(s, typePredicate, typeObject);
 		return typeTriple;
 	}
 
 	/*
-	 * Denotational semantics function : convert lexical columns into
-	 * a triple with mapped (predicate, object).
+	 * Denotational semantics function : convert lexical columns into a triple
+	 * with mapped (predicate, object).
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
 	private Statement convertLex(StdHeader header, Row r, String columnName,
 			String baseURI) throws UnsupportedEncodingException {
 		if (log.isDebugEnabled())
-			log.debug("[DirectMapper:convertLex] Table "
+			log.debug("[DirectMappingEngine:convertLex] Table "
 					+ r.getParentBody().getParentTable().getTableName()
 					+ ", column : " + columnName);
 		Statement result = null;
@@ -684,20 +737,18 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		SQLType sqlType = SQLType.toSQLType(Integer.valueOf(d));
 		if (sqlType.isBlobType()) {
 			if (log.isDebugEnabled())
-				log
-						.debug("[DirectMapper:convertLex] Table "
-								+ r.getParentBody().getParentTable()
-										.getTableName()
-								+ ", column "
-								+ columnName
-								+ " Forbidden BLOB type (binary stream not supported in XSD)"
-								+ " => this triple will be ignored.");
+				log.debug("[DirectMappingEngine:convertLex] Table "
+						+ r.getParentBody().getParentTable().getTableName()
+						+ ", column "
+						+ columnName
+						+ " Forbidden BLOB type (binary stream not supported in XSD)"
+						+ " => this triple will be ignored.");
 			return null;
 		} else {
 			type = SQLToXMLS.getEquivalentType(Integer.valueOf(d));
 			if (type == null)
 				throw new IllegalStateException(
-						"[DirectMapper:convertLex] Unknown XSD equivalent type of : "
+						"[DirectMappingEngine:convertLex] Unknown XSD equivalent type of : "
 								+ SQLType.toSQLType(Integer.valueOf(d))
 								+ " in column : "
 								+ columnName
@@ -705,6 +756,8 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 								+ r.getParentBody().getParentTable()
 										.getTableName());
 		}
+		// Canonical lexical form
+		v = XSDLexicalTransformation.extractNaturalRDFFormFrom(type, v);
 		if (type.toString().equals(XSDType.STRING.toString())) {
 			l = vf.createLiteral(v);
 		} else {
@@ -720,45 +773,47 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	}
 
 	/*
-	 * Denotational semantics function : convert row and columnNames
-	 * into predicate URI.
+	 * Denotational semantics function : convert row and columnNames into
+	 * predicate URI.
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
 	private URI convertCol(Row row, ArrayList<String> columnNames,
 			String baseURI, boolean isRef) throws UnsupportedEncodingException {
-		String label = URLEncoder.encode(row.getParentBody().getParentTable()
-				.getTableName(), DirectMappingEngine.encoding)
+		String label = percentEncode(row.getParentBody().getParentTable()
+				.getTableName(), false, false)
 				+ hash;
-		if (isRef) label += refInfix;
+		if (isRef)
+			label += refInfix;
 		int i = 0;
 		for (String columnName : columnNames) {
 			i++;
-			label += URLEncoder.encode(columnName, DirectMappingEngine.encoding);
+			label += percentEncode(columnName, true, false);
 			if (i < columnNames.size())
 				label += fullStop;
 		}
 		// Check URI syntax
 		if (!RDFDataValidator.isValidURI(baseURI + label)) {
-				log.warn("[DirectMapper:convertCol] This URI is not valid : "
-						+ baseURI + label);
-				log.warn("[DirectMapper:convertCol] This URI has been converted into : " + baseURI + label);
+			log.warn("[DirectMappingEngine:convertCol] This URI is not valid : "
+					+ baseURI + label);
+			log.warn("[DirectMappingEngine:convertCol] This URI has been converted into : "
+					+ baseURI + label);
 		}
 		// Create value factory which build URI
 		return vf.createURI(baseURI, label);
 	}
 
 	/*
-	 * Denotational semantics function : convert datatype from SQL
-	 * into xsd datatype.
+	 * Denotational semantics function : convert datatype from SQL into xsd
+	 * datatype.
 	 */
 	private URI convertDatatype(String datatype) {
 		String upDatatype = datatype.toUpperCase();
-		if (!SQLToXMLS.isValidSQLDatatype(Integer.valueOf(upDatatype)))	
-	    log.debug("[DirectMapper:convertDatatype] Unknown datatype : "
-						+ datatype);
-		String xsdDatatype = SQLToXMLS.getEquivalentType(Integer.valueOf(upDatatype))
-				.toString();
+		if (!SQLToXMLS.isValidSQLDatatype(Integer.valueOf(upDatatype)))
+			log.debug("[DirectMappingEngine:convertDatatype] Unknown datatype : "
+					+ datatype);
+		String xsdDatatype = SQLToXMLS.getEquivalentType(
+				Integer.valueOf(upDatatype)).toString();
 		return vf.createURI(RDFPrefixes.prefix.get("xsd"), xsdDatatype);
 	}
 
@@ -770,11 +825,13 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		Row r = (Row) tuple;
 		return r.getParentBody().getParentTable().getTableName();
 	}
+
 	public String getReferencedTableName(Key key) {
 		// Explicit conversion
 		ForeignKey referenceKey = (ForeignKey) key;
 		return referenceKey.getTargetTableName();
 	}
+
 	public HashSet<Key> getReferencedKeys(Tuple tuple) {
 		// Explicit conversion
 		Row r = (Row) tuple;
@@ -784,6 +841,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 			keys.add(fk);
 		return keys;
 	}
+
 	public boolean isPrimaryKey(Key key, Tuple tuple) {
 		// Explicit conversion
 		ForeignKey fk = (ForeignKey) key;

@@ -57,8 +57,9 @@ public abstract class RDFDataValidator {
 			// java.net.URI.create(strURI);
 			// All cases are not take into account... use openRDF library
 			vf.createURI(strURI);
-			isValid = true;
-		} catch (IllegalArgumentException e) {
+			// @todo : check if this rule is not too strict
+			if (!strURI.contains(" ")) isValid = true;
+		} catch (Exception e) {
 			// Nothing
 		}
 		return isValid;
@@ -97,8 +98,8 @@ public abstract class RDFDataValidator {
 	}
 
 	public static boolean isValidLiteral(String stringValue) {
-		// TODO
-		return false;
+		// TODO : improve this function ?
+		return true;
 	}
 
 	/**

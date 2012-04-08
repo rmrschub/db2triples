@@ -27,6 +27,7 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.dm.core;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -190,9 +191,9 @@ public class TupleExtractor {
 			hasTables = tablesSet.next();
 			if (!hasTables)
 				return false;
-			while ((tablesSet.getString("TABLE_TYPE") == null || !tablesSet
-					.getString("TABLE_TYPE").equals("TABLE"))
-					&& hasTables) {
+			
+			while (hasTables && (tablesSet.getString("TABLE_TYPE") == null || !tablesSet
+					.getString("TABLE_TYPE").equals("TABLE"))) {
 				hasTables = tablesSet.next();
 			}
 			if (!hasTables)
@@ -213,14 +214,23 @@ public class TupleExtractor {
 
 	private void extractMetrics(String tableName) {
 		// Extract metrics
-		String metricsSQLQuery = "SELECT COUNT(*) FROM " + tableName;
+		String metricsSQLQuery = null;
+		if (driver.equals(SQLConnector.mysqlDriver))
+			metricsSQLQuery = "SELECT COUNT(*) FROM `" + tableName + "`";
+		else
+			metricsSQLQuery = "SELECT COUNT(*) FROM \"" + tableName + "\"";
+		log.debug("[TupleExtractor:extractMetrics] Execute query : " + metricsSQLQuery);
 		Statement metricsStatement;
 		try {
 			metricsStatement = conn.createStatement();
 			ResultSet metricsSet = metricsStatement
 					.executeQuery(metricsSQLQuery);
 			if (metricsSet.next()) {
-				int nbTuples = metricsSet.getInt("count(*)");
+				int nbTuples = 0;
+				if (driver.equals(SQLConnector.mysqlDriver))
+					nbTuples = metricsSet.getInt("count(*)");
+				else
+					nbTuples = metricsSet.getInt("count");
 				currentNbTuplesInTable = nbTuples;
 				currentNbTuplesExtractedInTable = 0;
 				lastModuloValue = 0;
@@ -342,15 +352,15 @@ public class TupleExtractor {
 		}
 	}
 
-	public Tuple getCurrentTuple() {
+	public Tuple getCurrentTuple() throws UnsupportedEncodingException {
 		// This method depends on Direct Mapping norm used
 		return engine.extractTupleFrom(currentResultSet, currentHeaderSet,
 				currentPrimaryKeySet, currentImportedKeySet, currentTableName,
-				driver, timeZone);
+				driver, timeZone, currentNbTuplesExtractedInTable);
 	}
 
 	public Key getCurrentPrimaryIsForeignKey(Set<Key> referencedKeys,
-			Tuple tuple) {
+			Tuple tuple) throws UnsupportedEncodingException {
 		if (currentPrimaryIsForeignKey != null)
 			return currentPrimaryIsForeignKey;
 		else {
@@ -402,7 +412,7 @@ public class TupleExtractor {
 		}
 	}
 
-	public Key getPrimaryIsForeignKey(Key key, Tuple tuple) {
+	public Key getPrimaryIsForeignKey(Key key, Tuple tuple) throws UnsupportedEncodingException {
 		Key result = key;
 		try {
 			Statement referencedStatement = conn.createStatement();
@@ -425,7 +435,7 @@ public class TupleExtractor {
 					Tuple referencedTuple = engine.extractReferencedTupleFrom(
 							referencedValueSet, currentReferencedHeaderSet,
 							currentReferencedPrimaryKeySet, currentReferencedImportedKeySet,
-							engine.getReferencedTableName(key), driver, null);
+							engine.getReferencedTableName(key), driver, null, currentNbTuplesExtractedInTable);
 					if (referencedValueSet.next())
 						throw new IllegalStateException(
 								"[TupleExtractor:getReferencedTuples] Foreign key matches with one element and more, it's unconsistent.");
@@ -451,12 +461,12 @@ public class TupleExtractor {
 
 	}
 
-	public HashMap<Key, Tuple> getReferencedTuples(String driver, Tuple tuple) {
+	public HashMap<Key, Tuple> getReferencedTuples(String driver, Tuple tuple) throws UnsupportedEncodingException {
 		HashMap<Key, Tuple> result = new HashMap<Key, Tuple>();
 		try {
 			// Extract target name table
 			HashSet<Key> referencedKeys = engine.getReferencedKeys(tuple);
-			
+			log.debug("[TupleExtractor:getReferencedTuples] Referenced keys : " + referencedKeys);
 			Statement referencedStatement = conn.createStatement();
 			referencedStatement.setFetchSize(0); // Default behaviour = no cursor mode
 			Key primaryIsForeignKey = null;
@@ -494,7 +504,7 @@ public class TupleExtractor {
 										currentReferencedPrimaryKeySet,
 										currentReferencedImportedKeySet, engine
 												.getReferencedTableName(key),
-										driver, null);
+										driver, null, currentNbTuplesExtractedInTable);
 						if (referencedValueSet.next())
 							throw new IllegalStateException(
 									"[TupleExtractor:getReferencedTuples] Foreign key matches with one element and more, it's unconsistent.");

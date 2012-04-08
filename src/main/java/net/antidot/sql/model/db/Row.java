@@ -32,6 +32,7 @@
  */
 package net.antidot.sql.model.db;
 
+import java.io.UnsupportedEncodingException;
 import java.util.TreeMap;
 
 
@@ -39,19 +40,34 @@ public class Row implements Tuple {
 
 	TreeMap<String, String> values;
 	StdBody parentBody;
+	int index;
 
 	public StdBody getParentBody() {
 		return parentBody;
+	}
+	
+	public int getIndex(){
+		return index;
 	}
 
 	public void setParentBody(StdBody parentBody) {
 		this.parentBody = parentBody;
 	}
 
-	public Row(TreeMap<String, String> values, StdBody parentBody) {
-		this.values = values;
+	public Row(TreeMap<String, byte[]> values, StdBody parentBody, int index) throws UnsupportedEncodingException {
+		this.values = new TreeMap<String, String>();
+		if (values != null)
+			for (String key : values.keySet()){
+				byte[] bytesResult = values.get(key);
+				// Apply cast to string to the SQL data value
+				String value = null;
+				if (bytesResult != null) value = new String(bytesResult, "UTF-8");
+				this.values.put(key, value);
+			}
 		this.parentBody = parentBody;
+		this.index = index;
 	}
+	
 
 	public TreeMap<String, String> getValues() {
 		return values;

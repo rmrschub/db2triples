@@ -24,21 +24,28 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
+import java.io.UnsupportedEncodingException;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
-import net.antidot.semantic.rdf.rdb2rdf.commons.RDFTransformation;
+import net.antidot.semantic.rdf.rdb2rdf.commons.SQLToXMLS;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
+import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
 import net.antidot.sql.model.tools.SQLDataValidator;
+import net.antidot.sql.model.tools.SQLToolkit;
+import net.antidot.sql.model.type.SQLType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openrdf.model.Literal;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
@@ -68,8 +75,7 @@ public abstract class AbstractTermMap implements TermMap {
 		setStringTemplate(stringTemplate);
 		setTermType(termType, dataType);
 		setDataType(dataType);
-		
-		
+
 		setInversionExpression(inverseExpression);
 		checkGlobalConsistency();
 	}
@@ -93,7 +99,14 @@ public abstract class AbstractTermMap implements TermMap {
 	}
 
 	private void setInversionExpression(String inverseExpression)
-			throws InvalidR2RMLSyntaxException {
+			throws InvalidR2RMLSyntaxException, InvalidR2RMLStructureException {
+		// An inverse expression is associated with
+		// a column-valued term map or template-value term map
+		if (inverseExpression != null && getTermMapType() != null
+				&& getTermMapType() == TermMapType.CONSTANT_VALUED)
+			throw new InvalidR2RMLStructureException(
+					"[AbstractTermMap:setInversionExpression] An inverseExpression "
+							+ "can not be associated with a constant-value term map.");
 		// This property is optional
 		if (inverseExpression != null)
 			checkInverseExpression(inverseExpression);
@@ -131,21 +144,22 @@ public abstract class AbstractTermMap implements TermMap {
 			InvalidR2RMLStructureException {
 		if (termType == null) {
 			// If the term map does not have a rr:termType property :
-			// rr:Literal by default, if it is an object map and at 
+			// rr:Literal by default, if it is an object map and at
 			// least one of the following conditions is true
-			if (getColumnValue() != null || dataType != null || getLanguageTag() != null) {
+			if ((this instanceof StdObjectMap)
+					&& (getColumnValue() != null || dataType != null
+							|| getLanguageTag() != null || constantValue instanceof Literal)) {
 				this.termType = TermType.LITERAL;
-				log
-						.warn("[AbstractTermMap:setTermType] No term type specified : use Literal by default.");
+				log.debug("[AbstractTermMap:setTermType] No term type specified : use Literal by default.");
 			} else {
-				// otherwise its term type is IRI 
+				// otherwise its term type is IRI
 				this.termType = TermType.IRI;
-				log
-						.warn("[AbstractTermMap:setTermType] No term type specified : use IRI by default.");
+				log.debug("[AbstractTermMap:setTermType] No term type specified : use IRI by default.");
 			}
-			
+
 		} else {
 			TermType tt = null;
+
 			if (termType != null)
 				tt = checkTermType(termType);
 			this.termType = tt;
@@ -274,12 +288,12 @@ public abstract class AbstractTermMap implements TermMap {
 		return implicitDataType;
 	}
 
-	public RDFTransformation.Transformation getImplicitTransformation() {
+	public XSDLexicalTransformation.Transformation getImplicitTransformation() {
 		if (implicitDataType == null)
 			return null;
 		else
-			return RDFTransformation
-					.getCorrespondingTransformation(implicitDataType);
+			return XSDLexicalTransformation
+					.getLexicalTransformation(implicitDataType);
 	}
 
 	public String getInverseExpression() {
@@ -301,6 +315,7 @@ public abstract class AbstractTermMap implements TermMap {
 		case COLUMN_VALUED:
 			// The referenced columns of a column-valued term map is
 			// the singleton set containing the value of rr:column.
+			// referencedColumns.add(R2RMLToolkit.deleteBackSlash(columnValue));
 			referencedColumns.add(columnValue);
 			break;
 
@@ -359,24 +374,65 @@ public abstract class AbstractTermMap implements TermMap {
 		this.implicitDataType = implicitDataType;
 	}
 
-	public String getValue(Map<String, String> dbValues) {
-		log
-				.debug("[AbstractTermMap:getValue] Extract value of termType with termMapType : "
-						+ getTermMapType());
+	public String getValue(Map<String, byte[]> dbValues,
+			ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException,
+			UnsupportedEncodingException {
+
+		log.debug("[AbstractTermMap:getValue] Extract value of termType with termMapType : "
+				+ getTermMapType());
 		switch (getTermMapType()) {
 		case CONSTANT_VALUED:
 			return constantValue.stringValue();
 
 		case COLUMN_VALUED:
-			return dbValues.get(columnValue);
+			if (dbValues.keySet().isEmpty())
+				throw new IllegalStateException(
+						"[AbstractTermMap:getValue] impossible to extract from an empty database value set.");
+			// return dbValues.get(R2RMLToolkit.deleteBackSlash(columnValue));
+			byte[] bytesResult = null;
+			System.out.println(columnValue);
+			if (!SQLToolkit.isDelimitedIdentifier(columnValue)){
+				// Extract case-insensitve identifer 
+				for (String key : dbValues.keySet())
+					if (key.toLowerCase().equals(columnValue.toLowerCase())){
+						bytesResult = dbValues.get(key);
+						break;
+					}
+			}
+			else
+				bytesResult = dbValues.get(columnValue);
+			// Apply cast to string to the SQL data value
+			String result = new String(bytesResult, "UTF-8");
+			// Extract RDF Natural form
+			SQLType sqlType = null; 
+			for (int i = 1; i <= dbTypes.getColumnCount(); i++) {
+				if (!SQLToolkit.isDelimitedIdentifier(columnValue)){
+					// Extract case-insensitve identifer 
+					if (dbTypes.getColumnLabel(i).toLowerCase().equals(columnValue.toLowerCase())) 
+						sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
+				} else if (dbTypes
+							.getColumnLabel(i)
+							.equals(SQLToolkit.extractValueFromDelimitedIdentifier(columnValue))) 
+						sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
+					
+			}
+			if (sqlType != null) {
+				XSDType xsdType = SQLToXMLS.getEquivalentType(sqlType);
+				result = XSDLexicalTransformation.extractNaturalRDFFormFrom(
+						xsdType, result);
+			}
+			return result;
 
 		case TEMPLATE_VALUED:
-			return R2RMLToolkit.extractColumnValueFromStringTemplate(
-					stringTemplate, dbValues);
+			if (dbValues.keySet().isEmpty())
+				throw new IllegalStateException(
+						"[AbstractTermMap:getValue] impossible to extract from an empty database value set.");
+			result = R2RMLToolkit.extractColumnValueFromStringTemplate(
+					stringTemplate, dbValues, dbTypes);
+			return result;
 
 		default:
 			return null;
 		}
 	}
-
 }

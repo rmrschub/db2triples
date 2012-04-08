@@ -50,7 +50,11 @@ public abstract class SQLConnector {
 
 	// Log
 	private static Log log = LogFactory.getLog(SQLConnector.class);
-
+	
+	// JDBC driver types
+	public static String mysqlDriver = "com.mysql.jdbc.Driver";
+	public static String postgresqlDriver = "org.postgresql.Driver";
+	
 	/**
 	 * Try to connect a database and returns current connection.
 	 * 
@@ -69,12 +73,11 @@ public abstract class SQLConnector {
 			String url, String driver, String database) throws SQLException,
 			InstantiationException, IllegalAccessException,
 			ClassNotFoundException {
-		if (log.isDebugEnabled()) log.debug("[SQLConnection:extractDatabase] Try to connect " + url);
+		log.info("[SQLConnection:extractDatabase] Try to connect " + url + " with " + driver);
 		Class.forName(driver).newInstance();
 		Connection conn = DriverManager.getConnection(url + database, userName,
 				password);
-		if (log.isDebugEnabled()) log
-				.debug("[SQLConnection:extractDatabase] Database connection established");
+		log.info("[SQLConnection:extractDatabase] Database connection established.");
 		return conn;
 	}
 
@@ -126,20 +129,27 @@ public abstract class SQLConnector {
 	 * databases.
 	 * 
 	 * @param c
+	 * @param driver 
 	 * @throws SQLException
 	 */
-	public static void resetMySQLDatabase(Connection c) throws SQLException {
+	public static void resetMySQLDatabase(Connection c, String driver) throws SQLException {
 		// Get tables of database
 		DatabaseMetaData meta = c.getMetaData();
 		ResultSet tablesSet = meta.getTables(c.getCatalog(), null, "%", null);
 		while (tablesSet.next()) {
 			// Extract table name
-			String tableName = tablesSet.getString("TABLE_NAME");
+			String tableName = new String(tablesSet.getString("TABLE_NAME"));
+			String tableType =  tablesSet.getString("TABLE_TYPE");
 			// Get a statement from the connection
 			Statement stmt = c.createStatement();
 			// Execute the query
-			stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
-			stmt.execute("DROP TABLE " + tableName);
+			if (driver.equals("com.mysql.jdbc.Driver")){
+				// MySQL compatibility
+				stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
+				stmt.execute("DROP TABLE `" + tableName + "`");
+			} else {
+				if (tableType != null && tableType.equals("TABLE")) stmt.execute("DROP TABLE \"" + tableName + "\" CASCADE");
+			}
 			stmt.close();
 		}
 	}

@@ -32,6 +32,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureExc
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 
+import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
 public class StdPredicateMap extends AbstractTermMap implements TermMap,
@@ -41,15 +42,14 @@ public class StdPredicateMap extends AbstractTermMap implements TermMap,
 
 	public StdPredicateMap(PredicateObjectMap predicateObjectMap,
 			Value constantValue, String stringTemplate,
-			String inverseExpression, String columnValue)
+			String inverseExpression, String columnValue, URI termType)
 			throws R2RMLDataError, InvalidR2RMLStructureException,
 			InvalidR2RMLSyntaxException {
 		// No Literal term type
 		// ==> No datatype
 		// ==> No specified language tag
-		// Only termType possible : IRI => by default
 		// No class IRI
-		super(constantValue, null, null, stringTemplate, null,
+		super(constantValue, null, null, stringTemplate, termType,
 				inverseExpression, columnValue);
 		setPredicateObjectMap(predicateObjectMap);
 	}

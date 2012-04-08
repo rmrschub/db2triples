@@ -27,6 +27,7 @@
  ****************************************************************************/
 package net.antidot.semantic.rdf.rdb2rdf.r2rml.core;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -49,10 +50,12 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.R2RMLMapping;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.ReferencingObjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.SubjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermMap;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermMap.TermMapType;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermType;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TriplesMap;
-import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermMap.TermMapType;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.tools.SQLToolkit;
 import net.antidot.sql.model.type.SQLType;
 
 import org.apache.commons.logging.Log;
@@ -81,6 +84,9 @@ public class R2RMLEngine {
 	// A base IRI used in resolving relative IRIs produced by the R2RML mapping.
 	private String baseIRI;
 
+	private Map<TermMap, Map<Integer, ResultSet>> sameRows;
+	private Map<TermMap, Map<Integer, Value>> sameGeneratedRDFTerm;
+
 	// Value factory
 	private static ValueFactory vf = new ValueFactoryImpl();
 
@@ -102,10 +108,11 @@ public class R2RMLEngine {
 	 * @return
 	 * @throws SQLException
 	 * @throws R2RMLDataError
+	 * @throws UnsupportedEncodingException
 	 */
 	public SesameDataSet runR2RMLMapping(R2RMLMapping r2rmlMapping,
 			String baseIRI, String pathToNativeStore) throws SQLException,
-			R2RMLDataError {
+			R2RMLDataError, UnsupportedEncodingException {
 		log.debug("[R2RMLEngine:runR2RMLMapping] Run R2RML mapping... ");
 		if (r2rmlMapping == null)
 			throw new IllegalArgumentException(
@@ -125,6 +132,9 @@ public class R2RMLEngine {
 		} else {
 			sesameDataSet = new SesameDataSet();
 		}
+		// Update inverse expression settings
+		sameRows = new HashMap<TermMap, Map<Integer, ResultSet>>();
+		sameGeneratedRDFTerm = new HashMap<TermMap, Map<Integer, Value>>();
 
 		// Explore R2RML Mapping TriplesMap objects
 		generateRDFTriples(sesameDataSet, r2rmlMapping);
@@ -147,23 +157,32 @@ public class R2RMLEngine {
 	 * @param r2rmlMapping
 	 * @throws SQLException
 	 * @throws R2RMLDataError
+	 * @throws UnsupportedEncodingException
 	 */
 	private void generateRDFTriples(SesameDataSet sesameDataSet,
-			R2RMLMapping r2rmlMapping) throws SQLException, R2RMLDataError {
+			R2RMLMapping r2rmlMapping) throws SQLException, R2RMLDataError,
+			UnsupportedEncodingException {
 		log.debug("[R2RMLEngine:generateRDFTriples] Generate RDF triples... ");
-		for (TriplesMap triplesMap : r2rmlMapping.getTriplesMaps())
+		int delta = 0;
+		for (TriplesMap triplesMap : r2rmlMapping.getTriplesMaps()) {
 			genereateRDFTriplesFromTriplesMap(sesameDataSet, triplesMap);
+			log.info("[R2RMLEngine:generateRDFTriples] "
+					+ (sesameDataSet.getSize() - delta)
+					+ " triples generated for " + triplesMap.getName());
+			delta = sesameDataSet.getSize();
+		}
 	}
 
 	private void genereateRDFTriplesFromTriplesMap(SesameDataSet sesameDataSet,
-			TriplesMap triplesMap) throws SQLException, R2RMLDataError {
-		log
-				.debug("[R2RMLEngine:genereateRDFTriplesFromTriplesMap] Generate RDF triples from triples map... ");
+			TriplesMap triplesMap) throws SQLException, R2RMLDataError,
+			UnsupportedEncodingException {
+		log.debug("[R2RMLEngine:genereateRDFTriplesFromTriplesMap] Generate RDF triples from triples map... ");
 		// 1. Let sm be the subject map of the triples map
 		SubjectMap sm = triplesMap.getSubjectMap();
+		// Check inverse expression
 		// 2. Let rows be the result of evaluating the effective SQL query
 		rows = constructLogicalTable(triplesMap);
-		meta = rows.getMetaData();
+		meta = extractMetaDatas(rows);
 		// 3. Let classes be the class IRIs of sm
 		Set<URI> classes = sm.getClassIRIs();
 		// 4. Let sgm be the set of graph maps of sm
@@ -186,11 +205,100 @@ public class R2RMLEngine {
 			}
 	}
 
+	/*
+	 * An inverse expression MUST satisfy the following condition.
+	 */
+	private void performInverseExpression(Map<String, byte[]> dbValues,
+			TermMap tm, String effectiveSQLQuery) throws SQLException,
+			R2RMLDataError, UnsupportedEncodingException {
+		// Every column reference in the inverse expression MUST
+		// be an existing column in t
+		String inverseExpression = tm.getInverseExpression();
+		if (inverseExpression == null)
+			return;
+		Set<String> columnReferences = R2RMLToolkit
+				.extractColumnNamesFromInverseExpression(inverseExpression);
+		Set<String> existingColumns = getExistingColumnNames();
+		for (String referencedColumns : columnReferences) {
+			if (!SQLToolkit.isDelimitedIdentifier(referencedColumns)){
+				boolean found = false;
+				for (String existingColumn : existingColumns)
+					if (existingColumn.toLowerCase().equals(referencedColumns.toLowerCase())) {
+						found = true;
+						break;
+					}
+				if (!found)
+					throw new R2RMLDataError(
+							"[R2RMLEngine:checkInverseExpression] Every column"
+									+ " reference in the inverse expression must be an existing column : "
+									+ referencedColumns + " does not exist.");
+			} else {
+				if (!existingColumns.contains(SQLToolkit.extractValueFromDelimitedIdentifier(referencedColumns)))
+					throw new R2RMLDataError(
+							"[R2RMLEngine:checkInverseExpression] Every column"
+									+ " reference in the inverse expression must be an existing column : "
+									+ referencedColumns + " does not exist.");
+			}
+		
+		}
+		// Let instantiation(r)
+		String instantiation = R2RMLToolkit
+				.extractColumnValueFromInverseExpression(inverseExpression,
+						dbValues, columnReferences);
+		// let same-term(r) be the set of logical table rows in t that are
+		// the result of executing the following SQL query over the SQL
+		// connection
+		ResultSet sameTerm = constructInversionTable(instantiation,
+				effectiveSQLQuery);
+		// For every logical table row r in t whose generated RDF term g is not
+		// NULL, same-term(r)
+		// MUST be exactly the set of logical table rows in t whose generated
+		// RDF term is also g
+		// => Save similar rows
+		if (sameRows.containsKey(tm)) {
+			sameRows.get(tm).put(rows.getRow(), sameTerm);
+		} else {
+			Map<Integer, ResultSet> sameRowsMap = new HashMap<Integer, ResultSet>();
+			sameRowsMap.put(rows.getRow(), sameTerm);
+			sameRows.put(tm, sameRowsMap);
+		}
+
+	}
+
+	private Set<String> getExistingColumnNames() throws SQLException {
+		Set<String> result = new HashSet<String>();
+		for (int i = 1; i <= meta.getColumnCount(); i++)
+			result.add(meta.getColumnLabel(i));
+		if (referencingRows != null)
+			for (int i = 1; i <= referencingRows.getMetaData().getColumnCount(); i++)
+				result.add(referencingRows.getMetaData().getColumnLabel(i));
+		return result;
+	}
+
+	private ResultSetMetaData extractMetaDatas(ResultSet rows2)
+			throws SQLException {
+		ResultSetMetaData meta = rows.getMetaData();
+		// Tests the presence of duplicate column names in the SELECT list of
+		// the SQL query
+		Set<String> columnsNames = new HashSet<String>();
+		for (int i = 1; i <= meta.getColumnCount(); i++) {
+			String columnName = meta.getColumnLabel(i);
+			if (!columnsNames.contains(columnName))
+				columnsNames.add(columnName);
+			else
+				throw new SQLException(
+						"[R2RMLEngine:extractMetaDatas] duplicate column names in the "
+								+ "SELECT list of the SQL query");
+
+		}
+		return meta;
+	}
+
 	private void generateRDFTriplesFromReferencingObjectMap(
 			SesameDataSet sesameDataSet, TriplesMap triplesMap, SubjectMap sm,
 			Set<GraphMap> sgm, PredicateObjectMap predicateObjectMap,
 			ReferencingObjectMap referencingObjectMap) throws SQLException,
-			R2RMLDataError {
+			R2RMLDataError, UnsupportedEncodingException {
 		// 1. Let psm be the subject map of the parent triples map of the
 		// referencing object map
 		SubjectMap psm = referencingObjectMap.getParentTriplesMap()
@@ -211,76 +319,80 @@ public class R2RMLEngine {
 
 	private void generateRDFTriplesFromReferencingRow(
 			SesameDataSet sesameDataSet, TriplesMap triplesMap, SubjectMap sm,
-			SubjectMap psm, Set<GraphMap> pogm,
-			Set<GraphMap> sgm, PredicateObjectMap predicateObjectMap, int n) throws SQLException,
-			R2RMLDataError {
+			SubjectMap psm, Set<GraphMap> pogm, Set<GraphMap> sgm,
+			PredicateObjectMap predicateObjectMap, int n) throws SQLException,
+			R2RMLDataError, UnsupportedEncodingException {
 		// 1. Let child_row be the logical table row derived by
-		// taking the first n columns of row : see step 3, 4, 6 and 7 
+		// taking the first n columns of row : see step 3, 4, 6 and 7
 		// 2. Let parent_row be the logical table row derived by taking all
 		// but the first n columns of row : see step 5
 		// 3. Let subject be the generated RDF term that results from
 		// applying sm to child_row
-		Map<String, String> smFromRow = applyValueToChildRow(sm, n);
-		String value = sm.getValue(smFromRow);
-		Resource subject = (Resource) generateRDFTerm(sm, value);
-		log
-				.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate subject : "
-						+ value);
+		Map<String, byte[]> smFromRow = applyValueToChildRow(sm, n);
+		boolean nullFound = false;
+		for (String value : smFromRow.keySet())
+			if (smFromRow.get(value) == null) {
+				log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
+				nullFound = true;
+				break;
+			}
+		if (nullFound)
+			return;
+		Resource subject = (Resource) extractValueFromTermMap(sm, smFromRow,
+				triplesMap);
+		log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate subject : "
+				+ subject.stringValue());
 		// 4. Let predicates be the set of generated RDF terms that result from
 		// applying each of the predicate-object map's predicate maps to
 		// child_row
 		Set<URI> predicates = new HashSet<URI>();
 		for (PredicateMap pm : predicateObjectMap.getPredicateMaps()) {
-			Map<String, String> pmFromRow = applyValueToChildRow(pm, n);
-			String predicate_value = pm.getValue(pmFromRow);
-			URI predicate = (URI) generateRDFTerm(pm, predicate_value);
-			log
-					.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate : "
-							+ predicate);
+			Map<String, byte[]> pmFromRow = applyValueToChildRow(pm, n);
+			URI predicate = (URI) extractValueFromTermMap(pm, pmFromRow,
+					triplesMap);
+			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate : "
+					+ predicate);
 			predicates.add(predicate);
 		}
 		// 5. Let object be the generated RDF term that results from applying
 		// psm to parent_row
-		Map<String, String> omFromRow = applyValueToParentRow(psm, n);
-		String psm_value = psm.getValue(omFromRow);
-		Resource object = (Resource) generateRDFTerm(psm, psm_value);
-		log
-		.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate object : "
+		Map<String, byte[]> omFromRow = applyValueToParentRow(psm, n);
+		Resource object = (Resource) extractValueFromTermMap(psm, omFromRow,
+				psm.getOwnTriplesMap());
+		log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate object : "
 				+ object);
 		// 6. Let subject_graphs be the set of generated RDF terms that result
 		// from applying each graph map of sgm to child_row
 		Set<URI> subject_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : sgm) {
-			
-			Map<String, String> sgmFromRow = applyValueToChildRow(graphMap, n);
-			String graph_value = graphMap.getValue(sgmFromRow);
-			URI subject_graph = (URI) generateRDFTerm(graphMap, graph_value);
-			log
-					.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate subject graph : "
-							+ subject_graph);
+			Map<String, byte[]> sgmFromRow = applyValueToChildRow(graphMap, n);
+			URI subject_graph = (URI) extractValueFromTermMap(graphMap,
+					sgmFromRow, triplesMap);
+			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate subject graph : "
+					+ subject_graph);
 			subject_graphs.add(subject_graph);
 		}
-		// 7. Let predicate-object_graphs be the set of generated RDF terms 
+		// 7. Let predicate-object_graphs be the set of generated RDF terms
 		// that result from applying each graph map in pogm to child_row
 		Set<URI> predicate_object_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : pogm) {
-			Map<String, String> pogmFromRow = applyValueToChildRow(graphMap, n);
-			String graph_value = graphMap.getValue(pogmFromRow);
-			URI predicate_object_graph = (URI) generateRDFTerm(graphMap,
-					graph_value);
-			log
-					.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate object graph : "
-							+ predicate_object_graph);
+			Map<String, byte[]> pogmFromRow = applyValueToChildRow(graphMap, n);
+			URI predicate_object_graph = (URI) extractValueFromTermMap(
+					graphMap, pogmFromRow, triplesMap);
+			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate object graph : "
+					+ predicate_object_graph);
 			predicate_object_graphs.add(predicate_object_graph);
 		}
-		// 8. For each predicate in predicates, add triples to the output dataset
-		for (URI predicate : predicates){
-			// If neither sgm nor pogm has any graph maps: rr:defaultGraph; 
+		// 8. For each predicate in predicates, add triples to the output
+		// dataset
+		for (URI predicate : predicates) {
+			// If neither sgm nor pogm has any graph maps: rr:defaultGraph;
 			// otherwise: union of subject_graphs and predicate-object_graphs
 			Set<URI> targetGraphs = new HashSet<URI>();
 			targetGraphs.addAll(subject_graphs);
 			targetGraphs.addAll(predicate_object_graphs);
-			addTriplesToTheOutputDataset(sesameDataSet, subject, predicate, object, targetGraphs);
+			addTriplesToTheOutputDataset(sesameDataSet, subject, predicate,
+					object, targetGraphs);
 		}
 	}
 
@@ -294,23 +406,36 @@ public class R2RMLEngine {
 	 * @throws SQLException
 	 * @throws R2RMLDataError
 	 */
-	private Map<String, String> applyValueToParentRow(TermMap tm, int n)
+	private Map<String, byte[]> applyValueToParentRow(TermMap tm, int n)
 			throws SQLException, R2RMLDataError {
-		Map<String, String> result = new HashMap<String, String>();
+		Map<String, byte[]> result = new HashMap<String, byte[]>();
 		Set<String> columns = tm.getReferencedColumns();
 		ResultSetMetaData referencingMetas = referencingRows.getMetaData();
 		for (String column : columns) {
 			int m = -1;
 			for (int i = 1; i <= referencingMetas.getColumnCount(); i++) {
-				if (referencingMetas.getColumnName(i).equals(column))
-					m = i;
+				if (!SQLToolkit.isDelimitedIdentifier(column)) {
+					// Check case-insensitive SQL operations
+					if (referencingMetas.getColumnName(i).toLowerCase()
+							.equals(column.toLowerCase())) {
+						m = i;
+					}
+				} else {
+					if (referencingMetas
+							.getColumnName(i)
+							.equals(SQLToolkit
+									.extractValueFromDelimitedIdentifier(column))) {
+						m = i;
+					}
+				}
+
 			}
 			if (m == -1)
 				throw new R2RMLDataError(
-						"[R2RMLEngine:applyValueToChildRow] Unknown " + column
-								+ "in child row.");
-			if (m <= n) {
-				String value = referencingRows.getString(column);
+						"[R2RMLEngine:applyValueToParentRow] Unknown " + column
+								+ "in parent row.");
+			if (m >= n) {
+				byte[] value = referencingRows.getBytes(m);
 				result.put(column, value);
 			}
 		}
@@ -327,23 +452,38 @@ public class R2RMLEngine {
 	 * @throws SQLException
 	 * @throws R2RMLDataError
 	 */
-	private Map<String, String> applyValueToChildRow(TermMap tm, int n)
+	private Map<String, byte[]> applyValueToChildRow(TermMap tm, int n)
 			throws SQLException, R2RMLDataError {
-		Map<String, String> result = new HashMap<String, String>();
+		Map<String, byte[]> result = new HashMap<String, byte[]>();
 		Set<String> columns = tm.getReferencedColumns();
 		ResultSetMetaData referencingMetas = referencingRows.getMetaData();
 		for (String column : columns) {
 			int m = -1;
 			for (int i = 1; i <= referencingMetas.getColumnCount(); i++) {
-				if (referencingMetas.getColumnName(i).equals(column))
-					m = i;
+				
+				if (!SQLToolkit.isDelimitedIdentifier(column)) {
+					// Check case-insensitive SQL operations
+					if (referencingMetas.getColumnName(i).toLowerCase()
+							.equals(column.toLowerCase())) {
+						m = i;
+						break;
+					}
+				} else {
+					if (referencingMetas
+							.getColumnName(i)
+							.equals(SQLToolkit
+									.extractValueFromDelimitedIdentifier(column))) {
+						m = i;
+						break;
+					}
+				}
 			}
 			if (m == -1)
 				throw new R2RMLDataError(
 						"[R2RMLEngine:applyValueToChildRow] Unknown " + column
 								+ "in child row.");
 			if (m <= n) {
-				String value = referencingRows.getString(column);
+				byte[] value = referencingRows.getBytes(m);
 				result.put(column, value);
 			}
 		}
@@ -352,25 +492,30 @@ public class R2RMLEngine {
 
 	private void generateRDFTriplesFromRow(SesameDataSet sesameDataSet,
 			TriplesMap triplesMap, SubjectMap sm, Set<URI> classes,
-			Set<GraphMap> sgm) throws SQLException, R2RMLDataError {
+			Set<GraphMap> sgm) throws SQLException, R2RMLDataError,
+			UnsupportedEncodingException {
+
 		// 1. Let subject be the generated RDF term that results from applying
 		// sm to row
-		Map<String, String> smFromRow = applyValueToRow(sm);
-		String value = sm.getValue(smFromRow);
-		Resource subject = (Resource) generateRDFTerm(sm, value);
-		log
-				.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate subject : "
-						+ value);
+		Map<String, byte[]> smFromRow = applyValueToRow(sm);
+		Resource subject = (Resource) extractValueFromTermMap(sm, smFromRow,
+				triplesMap);
+		if (subject == null) {
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this subject will be ignored.");
+			return;
+		} else
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate subject : "
+					+ subject.stringValue());
+
 		// 2. Let subject_graphs be the set of the generated RDF terms
 		// that result from applying each term map in sgm to row
 		Set<URI> subject_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : sgm) {
-			Map<String, String> sgmFromRow = applyValueToRow(graphMap);
-			String graph_value = graphMap.getValue(sgmFromRow);
-			URI subject_graph = (URI) generateRDFTerm(graphMap, graph_value);
-			log
-					.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate subject graph : "
-							+ subject_graph);
+			Map<String, byte[]> sgmFromRow = applyValueToRow(graphMap);
+			URI subject_graph = (URI) extractValueFromTermMap(graphMap,
+					sgmFromRow, triplesMap);
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate subject graph : "
+					+ subject_graph);
 			subject_graphs.add(subject_graph);
 		}
 		// 3. For each classIRI in classes, add triples to the output dataset
@@ -385,25 +530,90 @@ public class R2RMLEngine {
 		for (PredicateObjectMap predicateObjectMap : triplesMap
 				.getPredicateObjectMaps())
 			generateRDFTriplesFromPredicateObjectMap(sesameDataSet, triplesMap,
-					subject, predicateObjectMap);
+					subject, subject_graphs, predicateObjectMap);
 
+	}
+
+	private Value extractValueFromTermMap(TermMap tm,
+			Map<String, byte[]> smFromRow, TriplesMap triplesMap)
+			throws SQLException, R2RMLDataError, UnsupportedEncodingException {
+		Value result = null;
+		if (tm.getInverseExpression() != null) {
+			
+			if (!sameRows.containsKey(tm)) {
+				// First perform of inversion expression
+				performInverseExpression(smFromRow, tm, triplesMap
+						.getLogicalTable().getEffectiveSQLQuery());
+				// Generate RDF Term
+				String value = tm.getValue(smFromRow, meta);
+				if (value == null)
+					return null;
+				result = (Resource) generateRDFTerm(tm, value);
+				// Store Generated RDF Term
+				Map<Integer, Value> sameGeneratedRDFTermMap = new HashMap<Integer, Value>();
+				sameGeneratedRDFTermMap.put(rows.getRow(), result);
+				sameGeneratedRDFTerm.put(tm, sameGeneratedRDFTermMap);
+			} else {
+				// Check if the current row exists in sameRows
+				Map<Integer, ResultSet> rowsMap = sameRows.get(tm);
+
+				for (Integer rm : rowsMap.keySet()) {
+					if (SQLToolkit.containsTheSameRow(rows, rowsMap.get(rm))) {
+						log.debug("[R2RMLEngine:extractSubject] Generate subject graph already exists thanks to inversion expression.");
+						result = (Resource) sameGeneratedRDFTerm.get(rm);
+						break;
+					}
+				}
+				if (result == null) {
+					// Generated RDF Term not found : run inversion search
+					performInverseExpression(smFromRow, tm, triplesMap
+							.getLogicalTable().getEffectiveSQLQuery());
+					// Generate RDF Term
+					String value = tm.getValue(smFromRow, meta);
+					if (value == null)
+						return null;
+					result = (Resource) generateRDFTerm(tm, value);
+					// Store Generated RDF Term
+					if (sameGeneratedRDFTerm.containsKey(tm)) {
+						sameGeneratedRDFTerm.get(tm).put(rows.getRow(), result);
+					} else {
+						Map<Integer, Value> sameGeneratedRDFTermMap = new HashMap<Integer, Value>();
+						sameGeneratedRDFTermMap.put(rows.getRow(), result);
+						sameGeneratedRDFTerm.put(tm, sameGeneratedRDFTermMap);
+					}
+				}
+			}
+		} else {
+			String value = tm.getValue(smFromRow, meta);
+			result = generateRDFTerm(tm, value);
+		}
+		return result;
 	}
 
 	private void generateRDFTriplesFromPredicateObjectMap(
 			SesameDataSet sesameDataSet, TriplesMap triplesMap,
-			Resource subject, PredicateObjectMap predicateObjectMap)
-			throws SQLException, R2RMLDataError {
+			Resource subject, Set<URI> subjectGraphs,
+			PredicateObjectMap predicateObjectMap) throws SQLException,
+			R2RMLDataError, UnsupportedEncodingException {
 		// 1. Let predicates be the set of generated RDF terms that result
 		// from applying each of the predicate-object map's predicate maps to
 		// row
 		Set<URI> predicates = new HashSet<URI>();
 		for (PredicateMap pm : predicateObjectMap.getPredicateMaps()) {
-			Map<String, String> pmFromRow = applyValueToRow(pm);
-			String value = pm.getValue(pmFromRow);
-			URI predicate = (URI) generateRDFTerm(pm, value);
-			log
-					.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate predicate : "
-							+ predicate);
+			Map<String, byte[]> pmFromRow = applyValueToRow(pm);
+			boolean nullFound = false;
+			for (String value : pmFromRow.keySet())
+				if (pmFromRow.get(value) == null) {
+					log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
+					nullFound = true;
+					break;
+				}
+			if (nullFound)
+				continue;
+			URI predicate = (URI) extractValueFromTermMap(pm, pmFromRow,
+					triplesMap);
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate predicate : "
+					+ predicate);
 			predicates.add(predicate);
 		}
 		// 2. Let objects be the set of generated RDF terms that result from
@@ -412,12 +622,19 @@ public class R2RMLEngine {
 		// maps) to row
 		Set<Value> objects = new HashSet<Value>();
 		for (ObjectMap om : predicateObjectMap.getObjectMaps()) {
-			Map<String, String> pmFromRow = applyValueToRow(om);
-			String value = om.getValue(pmFromRow);
-			Value object = (Value) generateRDFTerm(om, value);
-			log
-					.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate object : "
-							+ object);
+			Map<String, byte[]> omFromRow = applyValueToRow(om);
+			boolean nullFound = false;
+			for (String value : omFromRow.keySet())
+				if (omFromRow.get(value) == null) {
+					log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
+					nullFound = true;
+					break;
+				}
+			if (nullFound)
+				continue;
+			Value object = extractValueFromTermMap(om, omFromRow, triplesMap);
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate object : "
+					+ object);
 			objects.add(object);
 		}
 		// 3. Let pogm be the set of graph maps of the predicate-object map
@@ -425,14 +642,15 @@ public class R2RMLEngine {
 		// 4. Let predicate-object_graphs be the set of generated RDF
 		// terms that result from applying each graph map in pogm to row
 		Set<URI> predicate_object_graphs = new HashSet<URI>();
+		// 4+. Add graph of subject graphs set
+		if (subjectGraphs != null)
+			predicate_object_graphs.addAll(subjectGraphs);
 		for (GraphMap graphMap : pogm) {
-			Map<String, String> pogmFromRow = applyValueToRow(graphMap);
-			String graph_value = graphMap.getValue(pogmFromRow);
-			URI predicate_object_graph = (URI) generateRDFTerm(graphMap,
-					graph_value);
-			log
-					.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate predicate object graph : "
-							+ predicate_object_graph);
+			Map<String, byte[]> pogmFromRow = applyValueToRow(graphMap);
+			URI predicate_object_graph = (URI) extractValueFromTermMap(
+					graphMap, pogmFromRow, triplesMap);
+			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate predicate object graph : "
+					+ predicate_object_graph);
 			predicate_object_graphs.add(predicate_object_graph);
 		}
 		// 5. For each possible combination <predicate, object> where predicate
@@ -460,8 +678,10 @@ public class R2RMLEngine {
 	 */
 	private void addTriplesToTheOutputDataset(SesameDataSet sesameDataSet,
 			Resource subject, URI predicate, Value object, Set<URI> targetGraphs) {
+
 		// 1. If Subject, Predicate or Object is empty, then abort these steps.
-		if (subject == null || predicate == null || object == null) return;
+		if (subject == null || predicate == null || object == null)
+			return;
 		// 2. Otherwise, generate an RDF triple <Subject, Predicate, Object>
 		Statement triple = null;
 		if (targetGraphs.isEmpty()) {
@@ -488,12 +708,35 @@ public class R2RMLEngine {
 		log.debug("[R2RMLEngine:addStatement] Added new statement : " + triple);
 	}
 
-	private Map<String, String> applyValueToRow(TermMap tm) throws SQLException {
-		Map<String, String> result = new HashMap<String, String>();
+	private Map<String, byte[]> applyValueToRow(TermMap tm) throws SQLException {
+		Map<String, byte[]> result = new HashMap<String, byte[]>();
 		Set<String> columns = tm.getReferencedColumns();
 		for (String column : columns) {
-			String value = rows.getString(column);
-			result.put(column, value);
+			byte[] value = null;
+			if (!SQLToolkit.isDelimitedIdentifier(column)) {
+				String upValue = column.toUpperCase();
+				int i;
+				int n = rows.getMetaData().getColumnCount();
+				for (i = 1; i <= n; i++) {
+					String upColumnName = rows.getMetaData().getColumnLabel(i)
+							.toUpperCase();
+					if (upValue.equals(upColumnName)) {
+						log.debug("[R2RMLEngine:applyValueToRow] Case insensitive value found : "
+								+ rows.getString(i));
+						result.put(column, rows.getBytes(i));
+						break;
+					}
+				}
+				if (i == n + 1)
+					// Second chance fails...
+					throw new SQLException(
+							"[R2RMLEngine:applyValueToRow] Unknown column : "
+									+ column);
+			} else {
+				value = rows.getBytes(SQLToolkit
+						.extractValueFromDelimitedIdentifier(column));
+				result.put(column, value);
+			}
 		}
 		return result;
 	}
@@ -521,20 +764,22 @@ public class R2RMLEngine {
 		case IRI:
 			// 2. Otherwise, if the term map's term type is rr:IRI
 			URI iri = generateIRITermType(termMap, value);
-			log.debug("R2RMLEngine:generateRDFTerm] Generated RDF Term : "
+			log.debug("R2RMLEngine:generateRDFTerm] Generated IRI RDF Term : "
 					+ iri);
 			return (Value) iri;
 
 		case BLANK_NODE:
 			// 3. Otherwise, if the term map's term type is rr:BlankNode
 			BNode bnode = generateBlankNodeTermType(termMap, value);
-			log.debug("R2RMLEngine:generateRDFTerm] Generated RDF Term : "
+			log.debug("R2RMLEngine:generateRDFTerm] Generated Blank Node RDF Term : "
 					+ bnode);
 			return (Value) bnode;
 
 		case LITERAL:
 			// 4. Otherwise, if the term map's term type is rr:Literal
 			Value valueObj = generateLiteralTermType(termMap, value);
+			log.debug("R2RMLEngine:generateRDFTerm] Generated Literal RDF Term : "
+					+ valueObj);
 			return valueObj;
 
 		default:
@@ -567,7 +812,7 @@ public class R2RMLEngine {
 					.getAbsoluteStringURI()))
 				throw new R2RMLDataError(
 				// If the typed literal is ill-typed, then a data error is
-						// raised.
+				// raised.
 						"[R2RMLEngine:generateLiteralTermType] This datatype is not valid : "
 								+ value);
 			SQLType implicitDatatype = extractImplicitDatatype((ObjectMap) termMap);
@@ -576,22 +821,23 @@ public class R2RMLEngine {
 					.getEquivalentType(implicitDatatype);
 			if (implicitXSDType != termMap.getDataType()) {
 				// Type overidden
-				log
-						.debug("[R2RMLEngine:generateLiteralTermType] Type will be overidden : "
-								+ termMap.getDataType()
-								+ " != "
-								+ implicitXSDType);
-				URI datatype = vf.createURI(termMap.getDataType()
-						.getAbsoluteStringURI());
-				return vf.createLiteral(value, datatype);
+				log.debug("[R2RMLEngine:generateLiteralTermType] Type will be overidden : "
+						+ termMap.getDataType() + " != " + implicitXSDType);
+
 			}
+			// Lexical RDF Natural form
+			// value =
+			// XSDLexicalTransformation.extractNaturalRDFFormFrom(termMap.getDataType(),
+			// value);
+			URI datatype = vf.createURI(termMap.getDataType()
+					.getAbsoluteStringURI());
+			return vf.createLiteral(value, datatype);
+
 		} else {
 			// 3. Otherwise, return the natural RDF literal corresponding to
 			// value.
-			return extractNaturalRDFFormFrom(termMap, value);
+			return extractNaturalLiteralFormFrom(termMap, value);
 		}
-		return null;
-
 	}
 
 	private BNode generateBlankNodeTermType(TermMap termMap, String value) {
@@ -607,12 +853,15 @@ public class R2RMLEngine {
 	}
 
 	private URI generateIRITermType(TermMap termMap, String value)
-			throws R2RMLDataError {
+			throws R2RMLDataError, SQLException {
 		// 1. Let value be the natural RDF lexical form corresponding to value.
 		// 2. If value is a valid absolute IRI [RFC3987], then return an IRI
 		// generated from value.
+
 		if (RDFDataValidator.isValidURI(value)) {
 			URI result = vf.createURI(value);
+			log.debug("[R2RMLEngine:generateIRITermType] Valid generated IRI : "
+					+ value);
 			return result;
 		} else {
 			String prependedValue = baseIRI + value;
@@ -620,6 +869,8 @@ public class R2RMLEngine {
 				// Otherwise, prepend value with the base IRI. If the result is
 				// a valid absolute IRI [RFC3987], then return an IRI generated
 				// from the result.
+				log.debug("[R2RMLEngine:generateIRITermType] Valid generated IRI : "
+						+ prependedValue);
 				URI result = vf.createURI(prependedValue);
 				return result;
 			} else {
@@ -632,41 +883,36 @@ public class R2RMLEngine {
 		}
 	}
 
-	private SQLType extractImplicitDatatype(ObjectMap objectMap)
+	private SQLType extractImplicitDatatype(TermMap objectMap)
 			throws SQLException {
 		SQLType result = null;
 		if (objectMap.getTermMapType() != TermMapType.TEMPLATE_VALUED
-				&& objectMap.getTermType() == TermType.LITERAL) {
+				&& objectMap.getTermType() == TermType.LITERAL
+				&& objectMap.getConstantValue() == null) {
 			for (int i = 1; i <= meta.getColumnCount(); i++) {
-				if (meta.getColumnName(i).equals(
-						objectMap.getReferencedColumns().iterator().next())) {
-					result = SQLType.toSQLType(meta.getColumnType(i));
-					log
-							.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype :  "
-									+ result);
+				String label = meta.getColumnLabel(i);
+				String referencedColumn = objectMap.getReferencedColumns()
+						.iterator().next();
+				if (!SQLToolkit.isDelimitedIdentifier(referencedColumn)) {
+					if (label.toUpperCase().equals(
+							referencedColumn.toUpperCase())) {
+						// Check case-insensitive SQL operations
+						result = SQLType.toSQLType(meta.getColumnType(i));
+						log.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype (case-insensitive) :  "
+								+ result);
+					}
+				} else {
+					if (label
+							.equals(SQLToolkit
+									.extractValueFromDelimitedIdentifier(referencedColumn))) {
+						result = SQLType.toSQLType(meta.getColumnType(i));
+						log.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype :  "
+								+ result);
+					}
 				}
 			}
 		}
 		return result;
-	}
-
-	/**
-	 * The natural RDF lexical form corresponding to a SQL data value is the
-	 * lexical form of its corresponding natural RDF literal, with the
-	 * additional constraint that the canonical lexical representation SHOULD be
-	 * chosen.
-	 * 
-	 * @param termMap
-	 * 
-	 * @param value
-	 * @return
-	 * @throws SQLException
-	 */
-	@SuppressWarnings("unused")
-	private Value extractNaturalRDFLexicalFormFrom(TermMap termMap, String value)
-			throws SQLException {
-		// TODO ?
-		return null;
 	}
 
 	/**
@@ -677,29 +923,35 @@ public class R2RMLEngine {
 	 * @param value
 	 * @return
 	 * @throws SQLException
+	 * @throws R2RMLDataError
 	 */
-	private Value extractNaturalRDFFormFrom(TermMap termMap, String value)
-			throws SQLException {
+	private Value extractNaturalLiteralFormFrom(TermMap termMap, String value)
+			throws SQLException, R2RMLDataError {
 		// 1. Let dt be the SQL datatype of the SQL data value.
-		SQLType dt = extractImplicitDatatype((ObjectMap) termMap);
+		SQLType dt = extractImplicitDatatype(termMap);
 		// 2. If dt is a character string type, then the result is a plain
 		// literal without
 		// language tag whose lexical form is the SQL data value.
 		XSDType xsdType = SQLToXMLS.getEquivalentType(dt);
-		if (dt.isStringType()) {
+		// Extract RDF natural lexical form
+		if (dt == null || dt.isStringType()) {
 			if (xsdType == null) {
-				// 4. Otherwise, the result is a plain literal without language
-				// tag whose lexical form is the SQL data value CAST TO STRING.
+				// 4. Otherwise, the result is a plain literal without
+				// language
+				// tag whose lexical form is the SQL data value CAST TO
+				// STRING.
 
 				// CAST TO STRING is implicit is this treatment
 				return vf.createLiteral(value);
 			}
 			return vf.createLiteral(value);
 		} else if (xsdType != null) {
-			// 3. Otherwise, if dt is listed in the table below: The result is a
-			// typed literal whose datatype IRI is the IRI indicated in the RDF
-			// datatype column in the same row as dt
-			return vf.createLiteral(value, xsdType.getAbsoluteStringURI());
+			// 3. Otherwise, if dt is listed in the table below: The result
+			// is a
+			// typed literal whose datatype IRI is the IRI indicated in the
+			// RDF
+			return vf.createLiteral(value,
+					vf.createURI(xsdType.getAbsoluteStringURI()));
 		} else {
 			// 4. Otherwise, the result is a plain literal without language
 			// tag whose lexical form is the SQL data value CAST TO STRING.
@@ -707,6 +959,7 @@ public class R2RMLEngine {
 			// CAST TO STRING is implicit is this treatment
 			return vf.createLiteral(value);
 		}
+
 	}
 
 	/**
@@ -722,13 +975,13 @@ public class R2RMLEngine {
 	 */
 	private ResultSet constructLogicalTable(TriplesMap triplesMap)
 			throws SQLException {
-		log
-				.debug("[R2RMLEngine:constructLogicalTable] Run effective SQL Query : "
-						+ triplesMap.getLogicalTable().getEffectiveSQLQuery());
+		log.debug("[R2RMLEngine:constructLogicalTable] Run effective SQL Query : "
+				+ triplesMap.getLogicalTable().getEffectiveSQLQuery());
 		ResultSet rs = null;
 		java.sql.Statement s = conn.createStatement(
 				ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CONCUR_READ_ONLY);
 		if (triplesMap.getLogicalTable().getEffectiveSQLQuery() != null) {
+
 			s.executeQuery(triplesMap.getLogicalTable().getEffectiveSQLQuery());
 			rs = s.getResultSet();
 			if (rs == null)
@@ -758,13 +1011,30 @@ public class R2RMLEngine {
 			rs = s.getResultSet();
 			if (rs == null)
 				throw new IllegalStateException(
-						"[R2RMLEngine:constructLogicalTable] SQL request "
+						"[R2RMLEngine:constructJointTable] SQL request "
 								+ "failed : result of effective SQL query is null.");
 		} else {
 			throw new IllegalStateException(
-					"[R2RMLEngine:constructLogicalTable] No effective SQL query has been found.");
+					"[R2RMLEngine:constructJointTable] No effective SQL query has been found.");
 		}
 		return rs;
+	}
 
+	private ResultSet constructInversionTable(String instantiation,
+			String effectiveSQLQuery) throws SQLException {
+		String sqlQuery = "SELECT * FROM (" + effectiveSQLQuery
+				+ ") AS tmp WHERE " + instantiation + ";";
+		log.debug("[R2RMLEngine:constructInversionTable] Run inversion SQL Query : "
+				+ sqlQuery);
+		ResultSet rs = null;
+		java.sql.Statement s = conn.createStatement(
+				ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CONCUR_READ_ONLY);
+		s.executeQuery(sqlQuery);
+		rs = s.getResultSet();
+		if (rs == null)
+			throw new IllegalStateException(
+					"[R2RMLEngine:constructInversionTable] SQL request "
+							+ "failed : result of effective SQL query is null.");
+		return rs;
 	}
 }

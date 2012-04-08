@@ -49,10 +49,10 @@ import org.apache.commons.logging.LogFactory;
 import org.openrdf.rio.RDFFormat;
 
 @SuppressWarnings("static-access")
-public class db2triples {
+public class Db2triples {
 
 	// Log
-	private static Log log = LogFactory.getLog(db2triples.class);
+	private static Log log = LogFactory.getLog(Db2triples.class);
 
 	private static String MYSQL_DRIVER = "com.mysql.jdbc.Driver";
 	private static String POSTGRE_DRIVER = "org.postgresql.Driver";
@@ -438,7 +438,7 @@ public class db2triples {
 				 * driver); g = DirectMapper.generateDirectMapping(db, baseURI);
 				 **/
 				if (mode.equals("r2rml")){
-					g = R2RMLProcessor.convertDatabase(conn, r2rmlFile, baseURI);
+					g = R2RMLProcessor.convertDatabase(conn, r2rmlFile, baseURI, driver);
 				} else {
 					g = DirectMapper.generateDirectMapping(conn, version, driver,
 							baseURI, null, null);

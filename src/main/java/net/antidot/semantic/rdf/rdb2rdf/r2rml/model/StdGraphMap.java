@@ -34,6 +34,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureExc
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 
+import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
 public class StdGraphMap extends AbstractTermMap implements GraphMap {
@@ -41,14 +42,14 @@ public class StdGraphMap extends AbstractTermMap implements GraphMap {
 
 	public StdGraphMap(Value constantValue,
 			String stringTemplate, String inverseExpression,
-			String columnValue) throws R2RMLDataError,
+			String columnValue, URI termType) throws R2RMLDataError,
 			InvalidR2RMLStructureException, InvalidR2RMLSyntaxException {
 		// No Literal term type
 		// ==> No datatype
 		// ==> No specified language tag
 		// Only termType possible : IRI => by default
 		super(constantValue, null, null, stringTemplate,
-				null, inverseExpression, columnValue);
+				termType, inverseExpression, columnValue);
 		
 	}
 

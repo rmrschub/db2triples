@@ -104,7 +104,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 */
 	public Tuple extractTupleFrom(ResultSet valueSet, ResultSet headerSet,
 			ResultSet primaryKeysSet, ResultSet foreignKeysSet,
-			String tableName, String driver, String timeZone) {
+			String tableName, String driver, String timeZone, int index) throws UnsupportedEncodingException {
 		if (tableName != currentTableName)
 			// First table treatment
 			// Get datatypes
@@ -115,7 +115,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 			throw new IllegalStateException(
 					"[DirectMappingEngine:extractTupleFrom] One of mandatory elements for tuple's building is missing.");
 		// Extract row
-		Row result = extractRow(driver, header, tableName, valueSet, timeZone);
+		Row result = extractRow(driver, header, tableName, valueSet, timeZone, index);
 		// Attach context to this row
 		buildTmpModel(result, tableName, header, primaryKeys, foreignKeys);
 		return result;
@@ -144,7 +144,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	public Tuple extractReferencedTupleFrom(ResultSet valueSet,
 			ResultSet headerSet, ResultSet primaryKeysSet,
 			ResultSet foreignKeysSet, String tableName, String driver,
-			String timeZone) {
+			String timeZone, int index) throws UnsupportedEncodingException {
 		// Get datatypes
 		LinkedHashMap<String, String> referencedDatatypes = extractDatatypes(
 				headerSet, tableName);
@@ -160,7 +160,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 					"[DirectMappingEngine:extractTupleFrom] One of mandatory elements for tuple's building is missing.");
 		// Extract row
 		Row result = extractRow(driver, referencedHeader, tableName, valueSet,
-				timeZone);
+				timeZone, index);
 		// Attach context to this row
 		buildTmpModel(result, tableName, referencedHeader,
 				referencedPrimaryKeys, referencedForeignKeys);
@@ -188,11 +188,11 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 * Extract a row from values datasets and its model.
 	 */
 	private Row extractRow(String driver, StdHeader header, String tableName,
-			ResultSet valueSet, String timeZone) {
-		TreeMap<String, String> values = new TreeMap<String, String>();
+			ResultSet valueSet, String timeZone, int index) throws UnsupportedEncodingException {
+		TreeMap<String, byte[]> values = new TreeMap<String, byte[]>();
 		for (String columnName : header.getColumnNames()) {
 			try {
-				String value = null;
+				byte[] value = null;
 				SQLSpecificType type = SQLSpecificType.toSQLType(header.getDatatypes().get(
 						columnName));
 
@@ -201,7 +201,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 					// Particular treatment for MySQL dates
 					extractMySQLDate(columnName, valueSet, tableName, type, timeZone, values);
 				} else {
-					value = valueSet.getString(columnName);
+					value = valueSet.getBytes(columnName);
 					values.put(columnName, value);
 				}
 			} catch (SQLException e) {
@@ -209,7 +209,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 				e.printStackTrace();
 			}
 		}
-		Row row = new Row(values, null);
+		Row row = new Row(values, null, index);
 		return row;
 	}
 
@@ -218,7 +218,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 */
 	private void extractMySQLDate(String columnName, ResultSet valueSet,
 			String tableName, SQLSpecificType type, String timeZone,
-			TreeMap<String, String> values) {
+			TreeMap<String, byte[]> values) {
 		// Optimization of datatype
 		try {
 			SQLSpecificType.toSQLType(header.getDatatypes().get(columnName));
@@ -233,14 +233,14 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 									+ " from column "
 									+ columnName
 									+ " in table " + tableName);
-				values.put(columnName, "null");
+				values.put(columnName, (new String("null")).getBytes());
 			} else {
 					log
 							.debug("[SQLConnection:extractDatabase] Timestamp value : "
 									+ value);
 				// Store date values in appropriate date format
 				values.put(columnName, SQLConnector.dateFormatToDate(type, Long
-						.valueOf(value), timeZone));
+						.valueOf(value), timeZone).getBytes());
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -559,7 +559,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 * Generate blank name (useful for link row and referenced key in case of empty primary key).
 	 */
 	private  String generateUniqBlankNodeName(Row r) throws UnsupportedEncodingException{
-		String blankNodeUniqName = "";
+		String blankNodeUniqName = r.getIndex() + "-";
 		int i = 1;
 		for (String columnName : r.getValues().keySet()) {
 			blankNodeUniqName += URLEncoder.encode(columnName, DirectMappingEngine.encoding)

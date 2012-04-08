@@ -76,4 +76,7 @@ public interface PredicateObjectMap {
 	 */
 	public Set<GraphMap> getGraphMaps();
 	public void setGraphMaps(Set<GraphMap> graphmaps);
+	
+
+	
 }

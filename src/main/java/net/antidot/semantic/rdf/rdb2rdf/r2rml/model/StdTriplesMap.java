@@ -35,14 +35,15 @@ public class StdTriplesMap implements TriplesMap {
 	private Set<PredicateObjectMap> predicateObjectMaps;
 	private SubjectMap subjectMap;
 	private LogicalTable logicalTable;
+	private String name;
 
 	public StdTriplesMap(LogicalTable logicalTable,
 			Set<StdPredicateObjectMap> predicateObjectMaps,
-			StdSubjectMap subjectMap) throws InvalidR2RMLStructureException {
+			StdSubjectMap subjectMap, String name) throws InvalidR2RMLStructureException {
 		setSubjectMap(subjectMap);
 		setLogicalTable(logicalTable);
 		setPredicateObjectMap(predicateObjectMaps);
-
+		setName(name);
 	}
 
 	public void setLogicalTable(LogicalTable logicalTable) {
@@ -93,6 +94,16 @@ public class StdTriplesMap implements TriplesMap {
 	public void addPredicateObjectMap(PredicateObjectMap predicateObjectMap) {
 		if (predicateObjectMap != null)
 			predicateObjectMaps.add(predicateObjectMap);
+	}
+
+	public String getName() {
+		return this.name;
+	}
+
+	public void setName(String name) {
+		if (name != null)
+			this.name = name;
+		
 	}
 
 }

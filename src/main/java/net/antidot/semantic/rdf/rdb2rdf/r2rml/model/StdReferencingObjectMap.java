@@ -59,7 +59,7 @@ public class StdReferencingObjectMap implements ReferencingObjectMap {
 
 	public String getJointSQLQuery() {
 		String jointSQLQuery = "SELECT * FROM (" + getChildQuery()
-				+ ") AS child, (" + getParentQuery() + ")";
+				+ ") AS child, (" + getParentQuery() + ") AS parent";
 		// If the referencing object map has no join condition
 		if (joinConditions.isEmpty())
 			jointSQLQuery = "SELECT * FROM (" + getChildQuery() + ") AS tmp";

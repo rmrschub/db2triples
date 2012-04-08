@@ -28,40 +28,45 @@ package net.antidot.semantic.rdf.rdb2rdf.r2rml.model;
 
 import java.util.Set;
 
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLVocabulary;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
+
 public interface R2RMLView extends LogicalTable {
-	
+
 	public enum SQLVersion {
 		SQL2008("SQL2008");
-		// The RDB2RDF Working Group intends to maintain a non-normative 
+		// The RDB2RDF Working Group intends to maintain a non-normative
 		// list of identifiers for other SQL versions
-		
+
 		private String version;
-		private SQLVersion(String version){
+
+		private SQLVersion(String version) {
 			this.version = version;
 		}
-		
-		public static SQLVersion getSQLVersion(String version){
+
+		public static SQLVersion getSQLVersion(String version) throws R2RMLDataError{
 			for (SQLVersion sqlVersion : SQLVersion.values())
-				if (sqlVersion.toString().equals(version))
+				if (sqlVersion.toString().equals(version) || (R2RMLVocabulary.R2RML_NAMESPACE + sqlVersion.toString()).equals(version))
 					return sqlVersion;
-			return null;
+			// Unkwown SQL Version
+		    throw new R2RMLDataError("[R2RMLView:getSQLVersion] Unknow SQL version : " + version);
 		}
-		
+
 		public String toString() {
 			return version;
 		}
 	}
-	
+
 	/**
-	 * A SQL query is a SELECT query in the SQL language that 
-	 * can be executed over the input database.  
+	 * A SQL query is a SELECT query in the SQL language that can be executed
+	 * over the input database.
 	 */
 	public String getSQLQuery();
-	
+
 	/**
-	 * An R2RML view may have one or more SQL version identifiers.
-	 * The absence of a SQL version identifier indicates that no claim 
-	 * to Core SQL 2008 conformance is made.
+	 * An R2RML view may have one or more SQL version identifiers. The absence
+	 * of a SQL version identifier indicates that no claim to Core SQL 2008
+	 * conformance is made.
 	 */
 	public Set<SQLVersion> getSQLVersion();
 

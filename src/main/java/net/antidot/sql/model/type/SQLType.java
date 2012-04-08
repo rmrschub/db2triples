@@ -38,6 +38,7 @@ public enum SQLType {
 	BINARY(Types.BINARY),
 	BINARY_VARYING(Types.VARBINARY),
 	BINARY_LARGE_OBJECT(Types.LONGVARBINARY),
+	BIT(Types.BIT),
 	NUMERIC(Types.NUMERIC),
 	DECIMAL(Types.DECIMAL), 
 	SMALLINT(Types.SMALLINT),
@@ -56,6 +57,7 @@ public enum SQLType {
 	STRING(Types.LONGVARCHAR),
 	TINYINT(Types.TINYINT),
 	
+	
 	// Unsupported
 	BLOB(Types.BLOB);
 	
@@ -67,6 +69,7 @@ public enum SQLType {
 
 	private SQLType(int javaSQLType) {
 		this.javaSQLType = javaSQLType;
+		
 	}
 	
 	public int getID(){
@@ -150,6 +153,7 @@ public enum SQLType {
 			if (sqlType.getID() == id)
 				return sqlType;
 		}
+		log.warn("[SQLType:getSQLCastQuery] Unkonwm SQL id : " + id);
 		return UNKNOWN;
 	}
 	
@@ -158,6 +162,7 @@ public enum SQLType {
 	 * @param type
 	 * @param value
 	 * @return
+	 * @deprecated
 	 */
 	public static String getSQLCastQuery(SQLType type, String value){
 		if (type.isBinaryType()){

@@ -59,6 +59,8 @@ public class R2RMLVocabulary {
 		CONSTANT("constant"),
 		GRAPH("graph"),
 		GRAPH_MAP("graphMap"),
+		GRAPH_COLUMN("graphColumn"),
+		GRAPH_TEMPLATE("graphTemplate"),
 		INVERSE_EXPRESSION("inverseExpression"),
 		JOIN_CONDITION("joinCondition"),
 		LANGUAGE("language"),

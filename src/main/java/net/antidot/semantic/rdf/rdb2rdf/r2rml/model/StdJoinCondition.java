@@ -55,6 +55,10 @@ public class StdJoinCondition implements JoinCondition {
 			throw new InvalidR2RMLSyntaxException(
 					"[StdJoinCondition:setParent] Not a valid column "
 							+ "value : " + parent);
+		// TODO : Use "`" quote identifier (compatiblity with MySQL)
+		// parent = "`" + parent + "`";
+		// parent = "\"" + parent + "\"";
+		// parent  = parent.replaceAll("\\\"", "`");
 		this.parent = parent;
 	}
 
@@ -69,6 +73,10 @@ public class StdJoinCondition implements JoinCondition {
 			throw new InvalidR2RMLSyntaxException(
 					"[StdJoinCondition:setParent] Not a valid column "
 							+ "value : " + child);
+		// TODO : Use "`" quote identifier (compatiblity with MySQL)
+		// child = "`" + child + "`";
+		// child = "\"" + child + "\"";
+		// child  = child.replaceAll("\\\"", "`");
 		this.child = child;
 
 	}

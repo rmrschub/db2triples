@@ -50,6 +50,8 @@ public abstract class SQLToXMLS {
 		equivalentTypes.put(SQLType.REAL, XSDType.DOUBLE);
 		equivalentTypes.put(SQLType.DOUBLE_PRECISION, XSDType.DOUBLE);
 		equivalentTypes.put(SQLType.BOOLEAN, XSDType.BOOLEAN);
+		equivalentTypes.put(SQLType.BIT, XSDType.BOOLEAN);
+		equivalentTypes.put(SQLType.TINYINT, XSDType.BOOLEAN);
 		equivalentTypes.put(SQLType.DATE, XSDType.DATE);
 		equivalentTypes.put(SQLType.TIME, XSDType.TIME);
 		equivalentTypes.put(SQLType.TIMESTAMP, XSDType.DATETIME);
