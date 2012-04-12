@@ -1,7 +1,75 @@
+Release Notes db2triples v0.9.9
+
+Released on 08/04/2012
+
+1. New features
+
+1.1 R2RML, implementation of new W3C Candidate Recommendation of 23
+February 2012
+
+    (see http://www.w3.org/TR/r2rml/ for more information)
+    which includes among others:
+
+	* New R2RML data model
+	
+	* New R2RML vocabulary
+
+	* Datatypes treatments are now normalized (in a generic SQL formalism)
+
+	* Any DBMS that conform to Core SQL 2008 can now be mapped with
+	  its specific driver (tested only on PostGreSQL, which conforms
+	  to at least 160 mandatory features required for full Core
+	  conformance of 179)
+
+	* Support for MySQL 
+	  
+	* Support for binary types conversion
+	
+	* Support for predicate rr:inverseExpression (optimize term maps
+	  processing that reference derived columns in R2RML views)
+	
+	* Support for limited and regular SQL identifiers : allows to
+	  execute SQL query with case-sensitive/case-insensitive SQL
+	  identifier syntax rules
+	
+	* Support for canonical RDF lexical forms and transformation
+	
+
+1.2 Direct Mapping, implementation of new Candidate Recommendation of
+    23 February 2012 (see http://www.w3.org/TR/rdb-direct-mapping/ for
+    more information) which includes among others:
+
+	* Support for binary types conversion
+	
+	* Support for canonical RDF lexical forms and transformations (that
+      uses the same common rules as R2RML)
+	
+	
+2. Improvements
+
+2.1 Syntax of URI
+
+    * URI syntax of generated RDF terms strictly complies with the W3C
+      standard: IRI-safe version of string, percent-encoding and other
+      encoding process in the two Candidate Recommendations are
+      implemented.
+       
+	
+2.2 XMLSchema Types Management
+
+    * Rules for canonical RDF lexical forms and transformations
+
+3. Known Issues
+
+3.1 R2R2ML
+
+	* Use of litterals with bad types does not yet raise "Data error"
+
+_____________________________________________________________________
+
 Release Notes db2triples v0.9.5
+
 Released on 14/02/2012
-
-
 
 1. New features
 
@@ -22,7 +90,8 @@ Released on 14/02/2012
 
 	* Datatypes treatments are now normalized (in a generic SQL formalism)
 
-	* Any DBMS can now be mapped with its specific driver (tested only on MySQL and PostGreSQL at this time)
+	* Any DBMS can now be mapped with its specific driver 
+	       (tested only on MySQL and PostGreSQL at this time)
 
 	* "XMLSchema base64 encoding" mentioned in literal map
           definition of W3C Working Draft of 20 September 2011 is not
@@ -75,14 +144,16 @@ Released on 14/02/2012
 
 - Fixes an issue where blank nodes links for empty (non-existent) primary key were broken
 
-	* References to section 2.4.4 in "A Direct Mapping of Relational Data to RDF" (W3C Working Draft 24 March 2011)
+	* References to section 2.4.4 in "A Direct Mapping of Relational Data to RDF" 
+	   (W3C Working Draft 24 March 2011)
 
-	* References to section 2.5 in "A Direct Mapping of Relational Data to RDF" (W3C Working Draft 20 September 2011)
+	* References to section 2.5 in "A Direct Mapping of Relational Data to RDF" 
+	   (W3C Working Draft 20 September 2011)
 
 	* References to tables rows with no primary key are expressed
           as RDF triples with blank nodes for objects, where this
           blank node is the same node used for the subject in the
-          referenced row. [ouch!]
+          referenced row.
 
 
 Appendix: New parameters of Direct Mapping
