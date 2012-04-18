@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.antidot</groupId>
   <artifactId>db2triples</artifactId>
-  <version>0.90</version>
+  <version>0.99</version>
   <name>DB2Triples</name>
   <description>RDB2RDF Implementation from Antidot</description>
   <packaging>jar</packaging>
@@ -27,6 +27,11 @@
     	<groupId>mysql</groupId>
     	<artifactId>mysql-connector-java</artifactId>
     	<version>5.1.15</version>
+    </dependency>
+   <dependency>
+	     <groupId>postgresql</groupId>
+	     <artifactId>postgresql</artifactId>
+	     <version>9.1-901.jdbc4</version>
     </dependency>
     <dependency>
     	<groupId>commons-cli</groupId>
@@ -53,6 +58,7 @@
     	<type>jar</type>
     	<scope>runtime</scope>
     </dependency>
+    
   </dependencies>
   
   <url>https://github.com/antidot/db2triples</url>

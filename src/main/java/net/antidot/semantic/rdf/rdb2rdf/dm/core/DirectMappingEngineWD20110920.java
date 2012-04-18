@@ -492,19 +492,20 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	 */
 	private Resource phi(StdTable t, Row row, Row referencedRow, String baseURI)
 			throws UnsupportedEncodingException {
-		if (log.isDebugEnabled())
-			log.debug("[DirectMappingEngine:phi] Table : " + t);
+     	log.debug("[DirectMappingEngine:phi] Table : " + t);
+		
 		CandidateKey primaryKey = t.getPrimaryKey();
 		if (primaryKey != null) {
 			// Unique Node IRI
 			String stringURI = generateUniqNodeIRI(referencedRow, t,
 					primaryKey, baseURI);
+					
 			URI uri = vf.createURI(baseURI, stringURI);
 			// URIs.put(r, uri);
 			return uri;
 		} else {
 			// Blank node
-			BNode bnode = vf.createBNode(generateUniqBlankNodeName(row));
+			BNode bnode = vf.createBNode(generateUniqBlankNodeName(referencedRow));
 			return bnode;
 		}
 	}
@@ -608,7 +609,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	 */
 	private HashSet<SemiStatement> convertRef(Row row, Row referencedRow,
 			ForeignKey fk, String baseURI) throws UnsupportedEncodingException {
-		log.debug("[DirectMappingEngine:convertRef] Row : " + row);
+		log.debug("[DirectMappingEngine:convertRef] Row : " + row + " Referenced row : " + referencedRow);
 		HashSet<SemiStatement> result = new HashSet<SemiStatement>();
 		ArrayList<String> columnNames = new ArrayList<String>();
 		columnNames.addAll(fk.getColumnNames());

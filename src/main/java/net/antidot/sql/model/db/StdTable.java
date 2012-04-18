@@ -49,7 +49,6 @@ import net.antidot.sql.model.db.CandidateKey.KeyType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 public class StdTable implements Table {
 
 	// Log
@@ -91,6 +90,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Set the standard header of this table.
+	 * 
 	 * @param header
 	 */
 	public void setHeader(StdHeader header) {
@@ -99,12 +99,13 @@ public class StdTable implements Table {
 
 	/**
 	 * Return candidates keys of this table.
+	 * 
 	 * @return
 	 */
 	public ArrayList<CandidateKey> getCandidateKeys() {
 		return candidateKeys;
 	}
-	
+
 	public ArrayList<Key> getKeys() {
 		ArrayList<Key> keys = new ArrayList<Key>();
 		keys.addAll(getCandidateKeys());
@@ -114,6 +115,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Set candidates keys of this table.
+	 * 
 	 * @param candidateKeys
 	 */
 	public void setCandidateKeys(ArrayList<CandidateKey> candidateKeys) {
@@ -137,6 +139,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Return foreign keys of this table.
+	 * 
 	 * @return
 	 */
 	public HashSet<ForeignKey> getForeignKeys() {
@@ -150,6 +153,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Set foreign keys of this table.
+	 * 
 	 * @param foreignKeys
 	 */
 	public void setForeignKeys(HashSet<ForeignKey> foreignKeys) {
@@ -176,11 +180,11 @@ public class StdTable implements Table {
 				// Save values of columns in the fk for current row
 				columnNames.add(r.getValues().get(columnName));
 			}
-			if (log.isDebugEnabled())
-				log.debug("[Table:indexesRows] Row r = " + r
-						+ " columnNames = " + columnNames);
+			log.debug("[Table:indexesRows] Row r = " + r + " columnNames = "
+					+ columnNames);
 			if (indexedRows.get(columnNames) == null) {
-				indexedRows.put(new HashSet<String>(columnNames), new HashSet<Row>());
+				indexedRows.put(new HashSet<String>(columnNames),
+						new HashSet<Row>());
 			}
 			indexedRows.get(columnNames).add(r);
 			columnNames.clear();
@@ -195,8 +199,7 @@ public class StdTable implements Table {
 					"[Table:getIndexedRow] A indexed row is required whereas this table has not been indexed.");
 		if (indexedRowsByFk.get(fk) == null)
 			if (log.isWarnEnabled())
-				log
-						.warn("[Table:getIndexedRow] No indexed row for this foreign key.");
+				log.warn("[Table:getIndexedRow] No indexed row for this foreign key.");
 		if (log.isDebugEnabled())
 			log.debug("[Table:getIndexedRow] Table = " + tableName
 					+ " indexedRow at this value = " + indexedRowsByFk.get(fk)
@@ -210,6 +213,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Set standard body of this table.
+	 * 
 	 * @param body
 	 */
 	public void setBody(StdBody body) {
@@ -229,6 +233,7 @@ public class StdTable implements Table {
 
 	/**
 	 * Returns names of column which are not targeted by a unary foreign key.
+	 * 
 	 * @return
 	 */
 	public HashSet<String> getLexicals() {
@@ -258,8 +263,8 @@ public class StdTable implements Table {
 				+ "\tforeignKeys = [";
 		for (ForeignKey key : getForeignKeys())
 			result += key;
-		//result += "];" + System.getProperty("line.separator") + "\tbody = "
-		//		+ body;
+		// result += "];" + System.getProperty("line.separator") + "\tbody = "
+		// + body;
 		result += "];" + System.getProperty("line.separator")
 				+ "\tindexed rows = " + indexedRowsByFk.keySet();
 		return result;

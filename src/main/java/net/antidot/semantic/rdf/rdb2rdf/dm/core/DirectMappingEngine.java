@@ -110,9 +110,10 @@ public interface DirectMappingEngine {
 	 * @param headersSet
 	 * @param tableName
 	 * @return
+	 * @throws UnsupportedEncodingException 
 	 */
 	public String constructReferencedSQLQuery(String driver,
-			ResultSet headersSet, String tableName, Key key, Tuple tuple);
+			ResultSet headersSet, String tableName, Key key, Tuple tuple) throws UnsupportedEncodingException;
 
 	/**
 	 * Extract Sesame triples from generic tuples depends on used norm.
