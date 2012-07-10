@@ -115,8 +115,8 @@ public abstract class SQLConnector {
 				// string
 				// in order to not execute empty statements
 				if (!inst[i].trim().equals("")) {
-					st.executeUpdate(inst[i]);
-					if (log.isDebugEnabled()) log.debug("[SQLConnector:updateDatabase] >> " + inst[i]);
+				    log.debug("[SQLConnector:updateDatabase] >> " + inst[i]);
+				    st.executeUpdate(inst[i]);
 				}
 			}
 		} catch (Exception e) {
