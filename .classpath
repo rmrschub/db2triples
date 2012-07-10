@@ -57,6 +57,5 @@
 	<classpathentry kind="var" path="M2_REPO/commons-dbcp/commons-dbcp/1.3/commons-dbcp-1.3.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-pool/commons-pool/1.5.4/commons-pool-1.5.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar"/>
-	<classpathentry kind="lib" path="/home/jhomo/Code/DB2TRIPLES/direct-mapping_lib/postgresql-9.1-901.jdbc4.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
