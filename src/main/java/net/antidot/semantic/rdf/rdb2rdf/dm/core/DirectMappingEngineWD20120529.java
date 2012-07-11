@@ -82,9 +82,9 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 
 	// IRI characters used in rules
 	private static char solidus = '/';
-	private static char fullStop = '.';
+	private static char semicolon = ';';
 	private static char hash = '#';
-	private static char hyphenMinus = '-';
+	private static char hyphenEquals = '=';
 	private static String refInfix = "ref-";
 
 	public DirectMappingEngineWD20120529() {
@@ -542,10 +542,10 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 		for (String columnName : primaryKey.getColumnNames()) {
 			i++;
 			final byte[] bs = r.getValues().get(columnName);
-			stringURI += percentEncode(columnName, true, false) + hyphenMinus
+			stringURI += percentEncode(columnName, true, false) + hyphenEquals
 					+ percentEncode(new String(bs), false, true);
 			if (i < primaryKey.getColumnNames().size())
-				stringURI += ".";
+				stringURI += semicolon;
 		}
 		// Check URI syntax
 		if (!RDFDataValidator.isValidURI(baseURI + stringURI)) {
@@ -567,13 +567,14 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 		for (String columnName : r.getValues().keySet()) {
 			final byte[] bs = r.getValues().get(columnName);
 			blankNodeUniqName += percentEncode(columnName, true, false)
-					+ hyphenMinus
+					+ hyphenEquals
 					+ percentEncode(new String(bs), false, true);
 			if (i < r.getValues().size())
-				blankNodeUniqName += fullStop;
+				blankNodeUniqName += semicolon;
 			i++;
 		}
-		return blankNodeUniqName;
+		// Bug of Jena......
+		return blankNodeUniqName.replace("%", "P").replace(";", "S").replace("=", "-");
 	}
 
 	/*
@@ -618,6 +619,15 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 		columnNames.addAll(fk.getColumnNames());
 		URI p = convertCol(row, columnNames, baseURI, true);
 
+		// Do NOT build if ANY ref is "null"
+		for(String colName : fk.getReferenceKey().getColumnNames())
+		{
+		    if(referencedRow.getValues().get(colName) == null)
+		    {
+			log.debug("[DirectMappingEngine:convertRef] Return since " + colName + " is null");
+			return result;
+		    }
+		}
 		// Get URI of target table
 		Resource o = phi(referencedRow.getParentBody().getParentTable(), row,
 				referencedRow, baseURI);
@@ -794,7 +804,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 			i++;
 			label += percentEncode(columnName, true, false);
 			if (i < columnNames.size())
-				label += fullStop;
+				label += semicolon;
 		}
 		// Check URI syntax
 		if (!RDFDataValidator.isValidURI(baseURI + label)) {
