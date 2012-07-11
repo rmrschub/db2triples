@@ -297,11 +297,15 @@ public abstract class R2RMLToolkit {
 					sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
 			}
 			// Apply cast to string to the SQL data value
-			String value = new String(byteValue, "UTF-8");
+			String value;
 			if (sqlType != null) {
 				XSDType xsdType = SQLToXMLS.getEquivalentType(sqlType);
 				value = XSDLexicalTransformation.extractNaturalRDFFormFrom(
-						xsdType, value);
+						xsdType, byteValue);
+			}
+			else
+			{
+			    value = new String(byteValue, "UTF-8");
 			}
 			result = result.replaceAll("\\{" + column + "\\}",
 					getIRISafeVersion(value));

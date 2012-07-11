@@ -64,11 +64,11 @@ import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;
 
-public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
+public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 
 	// Log
 	private static Log log = LogFactory
-			.getLog(DirectMappingEngineWD20110920.class);
+			.getLog(DirectMappingEngineWD20120529.class);
 
 	// Database values
 	private String currentTableName;
@@ -87,7 +87,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 	private static char hyphenMinus = '-';
 	private static String refInfix = "ref-";
 
-	public DirectMappingEngineWD20110920() {
+	public DirectMappingEngineWD20120529() {
 		initDatabaseValues();
 	}
 
@@ -439,15 +439,16 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		int j = 0;
 		ArrayList<String> columnNames = fk.getReferenceKey().getColumnNames();
 		for (String columnName : columnNames) {
-			String value = r.getValues().get(fk.getColumnNames().get(j));
-			if (value == null) {
+			final byte[] bs = r.getValues().get(fk.getColumnNames().get(j));
+			if (bs == null) {
 				// Always use IS NULL to look for NULL values.
 				if (driver.equals(SQLConnector.mysqlDriver))
 					SQLQuery += "`" + columnName + "` IS NULL";
 				else
 					SQLQuery += "\"" + columnName + "\" IS NULL";
 			} else {
-				if (driver.equals(SQLConnector.mysqlDriver))
+			    String value = new String(bs);
+			    if (driver.equals(SQLConnector.mysqlDriver))
 					SQLQuery += "`" + columnName + "` = '" + value + "'";
 				else
 					SQLQuery += "\"" + columnName + "\" = '" + value + "'";
@@ -540,8 +541,9 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		int i = 0;
 		for (String columnName : primaryKey.getColumnNames()) {
 			i++;
+			final byte[] bs = r.getValues().get(columnName);
 			stringURI += percentEncode(columnName, true, false) + hyphenMinus
-					+ percentEncode(r.getValues().get(columnName), false, true);
+					+ percentEncode(new String(bs), false, true);
 			if (i < primaryKey.getColumnNames().size())
 				stringURI += ".";
 		}
@@ -563,9 +565,10 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		String blankNodeUniqName = r.getIndex() + "-";
 		int i = 1;
 		for (String columnName : r.getValues().keySet()) {
+			final byte[] bs = r.getValues().get(columnName);
 			blankNodeUniqName += percentEncode(columnName, true, false)
 					+ hyphenMinus
-					+ percentEncode(r.getValues().get(columnName), false, true);
+					+ percentEncode(new String(bs), false, true);
 			if (i < r.getValues().size())
 				blankNodeUniqName += fullStop;
 			i++;
@@ -728,7 +731,7 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 		ArrayList<String> columnNames = new ArrayList<String>();
 		columnNames.add(columnName);
 		URI p = convertCol(r, columnNames, baseURI, false);
-		String v = r.getValues().get(columnName);
+		byte[] v = r.getValues().get(columnName);
 		String d = header.getDatatypes().get(columnName);
 		if (v == null || v.equals("null")) {
 			// Don't keep triple with null value
@@ -758,15 +761,15 @@ public class DirectMappingEngineWD20110920 implements DirectMappingEngine {
 										.getTableName());
 		}
 		// Canonical lexical form
-		v = XSDLexicalTransformation.extractNaturalRDFFormFrom(type, v);
+		String v_str = XSDLexicalTransformation.extractNaturalRDFFormFrom(type, v);
 		if (type.toString().equals(XSDType.STRING.toString())) {
-			l = vf.createLiteral(v);
+			l = vf.createLiteral(v_str);
 		} else {
 			URI datatype_iri = convertDatatype(d);
 			if (datatype_iri == null) {
-				l = vf.createLiteral(v);
+				l = vf.createLiteral(v_str);
 			} else {
-				l = vf.createLiteral(v, datatype_iri);
+				l = vf.createLiteral(v_str, datatype_iri);
 			}
 		}
 		result = vf.createStatement(null, p, (Value) l);

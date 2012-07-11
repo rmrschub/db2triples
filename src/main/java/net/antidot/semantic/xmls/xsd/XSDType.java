@@ -83,7 +83,7 @@ public enum XSDType {
 	/**
 	 */
 	POSITIVE_INTEGER("positiveInteger"), // Based on xsd:nonNegativeInteger
-	BASE_64_BINARY("base64Binary"),
+	HEXBINARY("hexBinary"),
 	BOOLEAN("boolean");
 	
 	public static String XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema#";

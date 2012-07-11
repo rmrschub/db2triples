@@ -178,7 +178,8 @@ public class StdTable implements Table {
 		for (Row r : body.getRows()) {
 			for (String columnName : fk.getReferenceKey().getColumnNames()) {
 				// Save values of columns in the fk for current row
-				columnNames.add(r.getValues().get(columnName));
+				final byte[] bs = r.getValues().get(columnName);
+				columnNames.add(new String(bs));
 			}
 			log.debug("[Table:indexesRows] Row r = " + r + " columnNames = "
 					+ columnNames);

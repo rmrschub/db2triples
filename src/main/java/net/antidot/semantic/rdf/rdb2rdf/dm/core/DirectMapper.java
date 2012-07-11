@@ -75,8 +75,8 @@ public abstract class DirectMapper extends Thread {
 		case WD_20110324:
 			dme = new DirectMappingEngineWD20110324();
 			break;
-		case WD_20110920:
-			dme = new DirectMappingEngineWD20110920();
+		case WD_20120529:
+			dme = new DirectMappingEngineWD20120529();
 			break;
 		default:
 			// Working draft Mars 2011 by default

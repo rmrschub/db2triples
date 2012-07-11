@@ -401,8 +401,6 @@ public abstract class AbstractTermMap implements TermMap {
 			}
 			else
 				bytesResult = dbValues.get(columnValue);
-			// Apply cast to string to the SQL data value
-			String result = new String(bytesResult, "UTF-8");
 			// Extract RDF Natural form
 			SQLType sqlType = null; 
 			for (int i = 1; i <= dbTypes.getColumnCount(); i++) {
@@ -416,10 +414,16 @@ public abstract class AbstractTermMap implements TermMap {
 						sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
 					
 			}
+			// Apply cast to string to the SQL data value
+			String result;
 			if (sqlType != null) {
 				XSDType xsdType = SQLToXMLS.getEquivalentType(sqlType);
 				result = XSDLexicalTransformation.extractNaturalRDFFormFrom(
-						xsdType, result);
+						xsdType, bytesResult);
+			}
+			else
+			{
+			    result = new String(bytesResult, "UTF-8");
 			}
 			return result;
 

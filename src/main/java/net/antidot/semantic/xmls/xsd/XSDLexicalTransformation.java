@@ -24,117 +24,158 @@
  ****************************************************************************/
 package net.antidot.semantic.xmls.xsd;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
 import sun.misc.BASE64Encoder;
 
-public class XSDLexicalTransformation{
-	
-	public enum Transformation {
-		BASE_64_ENCODING, NONE_REQUIRED, ENSURE_LOWERCASE, REPLACE_SPACE_CHARACTER, UNDEFINED
-	}
+public class XSDLexicalTransformation {
 
-	/**
-	 * The RDF transformation of a SQL datatype is a transformation rule given
-	 * in the table below.
-	 */
-	private static Map<XSDType, Transformation> correspondingTransformation = new HashMap<XSDType, Transformation>();
+    public enum Transformation {
+	HEX_ENCODING, NONE_REQUIRED, ENSURE_LOWERCASE, REPLACE_SPACE_CHARACTER, UNDEFINED
+    }
 
-	static {
-		correspondingTransformation.put(XSDType.BASE_64_BINARY,
-				Transformation.BASE_64_ENCODING);
-		correspondingTransformation.put(XSDType.DECIMAL,
-				Transformation.NONE_REQUIRED);
-		correspondingTransformation.put(XSDType.INTEGER,
-				Transformation.NONE_REQUIRED);
-		correspondingTransformation.put(XSDType.DOUBLE,
-				Transformation.NONE_REQUIRED);
-		correspondingTransformation.put(XSDType.BOOLEAN,
-				Transformation.ENSURE_LOWERCASE);
-		correspondingTransformation.put(XSDType.DATE,
-				Transformation.NONE_REQUIRED);
-		correspondingTransformation.put(XSDType.TIME,
-				Transformation.NONE_REQUIRED);
-		correspondingTransformation.put(XSDType.DATETIME,
-				Transformation.REPLACE_SPACE_CHARACTER);
-	}
+    /**
+     * The RDF transformation of a SQL datatype is a transformation rule given
+     * in the table below.
+     */
+    private static Map<XSDType, Transformation> correspondingTransformation = new HashMap<XSDType, Transformation>();
 
-	/**
-	 * Get the corresponding transformation or conversion to string if the SQL
-	 * datatype does not occur in the table.
-	 */
-	public static Transformation getLexicalTransformation(XSDType xsdType) {
-		Transformation t = correspondingTransformation.get(xsdType);
-		if (t == null) {
-			// Any types not appearing in the table, including all character
-			// string
-			// types and vendor-specific types, will default to producing RDF
-			// plain
-			// literals by using conversion to string.
-			return Transformation.NONE_REQUIRED;
-		}
-		return t;
-	}
-	
-	/**
-	 * Transform a given value to its form obtained by its corresponding lexical 
-	 * transformation.
-	 * @param value
-	 * @param transformation
-	 * @return
-	 */
-	public static String transform(String value, Transformation transformation){
-		String result = value;
-		
-		switch (transformation) {
-		case NONE_REQUIRED:
-			return value;
-		case UNDEFINED:
-			throw new IllegalArgumentException("[SQLLexicalTransformation:transform] Unkonw lexical transformation.");
-		case ENSURE_LOWERCASE:
-			return ensureLowercase(value);
-		case REPLACE_SPACE_CHARACTER:
-			return replaceSpaceCharacter(value);
-		case BASE_64_ENCODING:
-			return base64Encoding(value);
-		default:
-			break;
-		}
-		return result;
-	}
-	
-	private static String base64Encoding(String value) {
-		BASE64Encoder encoder = new BASE64Encoder();
-		byte[] bytes = value.getBytes();
-		String result = encoder.encode(bytes);
-		result = result.replaceAll("[\r\n]+", "");
-		return result;
-	}
+    static {
+	correspondingTransformation.put(XSDType.HEXBINARY,
+		Transformation.HEX_ENCODING);
+	correspondingTransformation.put(XSDType.DECIMAL,
+		Transformation.NONE_REQUIRED);
+	correspondingTransformation.put(XSDType.INTEGER,
+		Transformation.NONE_REQUIRED);
+	correspondingTransformation.put(XSDType.DOUBLE,
+		Transformation.NONE_REQUIRED);
+	correspondingTransformation.put(XSDType.BOOLEAN,
+		Transformation.ENSURE_LOWERCASE);
+	correspondingTransformation.put(XSDType.DATE,
+		Transformation.NONE_REQUIRED);
+	correspondingTransformation.put(XSDType.TIME,
+		Transformation.NONE_REQUIRED);
+	correspondingTransformation.put(XSDType.DATETIME,
+		Transformation.REPLACE_SPACE_CHARACTER);
+    }
 
-	private static String replaceSpaceCharacter(String value) {
-		return value.replace(' ', 'T');
+    /**
+     * Get the corresponding transformation or conversion to string if the SQL
+     * datatype does not occur in the table.
+     */
+    public static Transformation getLexicalTransformation(XSDType xsdType) {
+	Transformation t = correspondingTransformation.get(xsdType);
+	if (t == null) {
+	    // Any types not appearing in the table, including all character
+	    // string
+	    // types and vendor-specific types, will default to producing RDF
+	    // plain
+	    // literals by using conversion to string.
+	    return Transformation.NONE_REQUIRED;
 	}
+	return t;
+    }
 
-	private static String ensureLowercase(String value) {
-		return value.toLowerCase();
+    /**
+     * Transform a given value to its form obtained by its corresponding lexical
+     * transformation.
+     * 
+     * @param value
+     * @param transformation
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    public static String transform(byte[] value, Transformation transformation)
+	    throws UnsupportedEncodingException {
+	switch (transformation) {
+	case HEX_ENCODING:
+	    return hexEncoding(value);
+	default:
+	    return transformFromString(new String(value, "UTF-8"),
+		    transformation);
 	}
-	
-	public static String extractNaturalRDFFormFrom(XSDType xsdType, String value) {
-		String result = value;
-		if (xsdType != null) {
-			// 3. Otherwise, if dt is listed in the table below: The result
-			// is a
-			// typed literal whose datatype IRI is the IRI indicated in the
-			// RDF
-			// Lexical transformation
-			result = XSDLexicalTransformation.transform(value,
-					XSDLexicalTransformation.getLexicalTransformation(xsdType));
-			// Canonical lexical form
-			result = XSDLexicalForm.getCanonicalLexicalForm(result, xsdType);
-		}
-		return result;
+    }
 
+    /**
+     * Transform a given value to its form obtained by its corresponding lexical
+     * transformation.
+     * 
+     * @param value
+     * @param transformation
+     * @return
+     */
+    public static String transformFromString(String value,
+	    Transformation transformation) {
+	switch (transformation) {
+	case NONE_REQUIRED:
+	    return new String(value);
+	case UNDEFINED:
+	    throw new IllegalArgumentException(
+		    "[SQLLexicalTransformation:transform] Unkonw lexical transformation.");
+	case ENSURE_LOWERCASE:
+	    return ensureLowercase(new String(value));
+	case REPLACE_SPACE_CHARACTER:
+	    return replaceSpaceCharacter(new String(value));
+	case HEX_ENCODING:
+	    throw new IllegalArgumentException(
+		    "[SQLLexicalTransformation:transform] Cannot hex encoding from string");
+	default:
+	    break;
 	}
+	return value;
+    }
+
+    private static String byteToString(byte b) {
+	String byte_str = Integer.toHexString(b).toUpperCase();
+	if(byte_str.length() == 2)
+	{
+	    return byte_str;
+	}
+	else if(byte_str.length() == 1)
+	{
+	    return "0"+byte_str;
+	}
+	else if(byte_str.length() > 2)
+	{
+	    return byte_str.substring(byte_str.length() - 2);
+	}
+	throw new IllegalArgumentException("Unable to convert byte to string: "+b);
+    }
+
+    private static String hexEncoding(byte[] value) {
+	StringBuffer buffer = new StringBuffer();
+	for (byte b : value) {
+	    buffer.append(byteToString(b));
+	}
+	return buffer.toString();
+    }
+
+    private static String replaceSpaceCharacter(String value) {
+	return value.replace(' ', 'T');
+    }
+
+    private static String ensureLowercase(String value) {
+	return value.toLowerCase();
+    }
+
+    public static String extractNaturalRDFFormFrom(XSDType xsdType, byte[] value)
+	    throws UnsupportedEncodingException {
+	String result = new String("");
+	if (xsdType != null) {
+	    // 3. Otherwise, if dt is listed in the table below: The result
+	    // is a
+	    // typed literal whose datatype IRI is the IRI indicated in the
+	    // RDF
+	    // Lexical transformation
+	    result = XSDLexicalTransformation.transform(value,
+		    XSDLexicalTransformation.getLexicalTransformation(xsdType));
+	    // Canonical lexical form
+	    result = XSDLexicalForm.getCanonicalLexicalForm(result, xsdType);
+	}
+	return result;
+
+    }
 
 }

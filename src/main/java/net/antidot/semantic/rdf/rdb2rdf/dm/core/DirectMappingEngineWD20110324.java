@@ -562,9 +562,10 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		String blankNodeUniqName = r.getIndex() + "-";
 		int i = 1;
 		for (String columnName : r.getValues().keySet()) {
+			final byte[] bs = r.getValues().get(columnName);
 			blankNodeUniqName += URLEncoder.encode(columnName, DirectMappingEngine.encoding)
 					+ hyphenMinus
-					+ URLEncoder.encode(r.getValues().get(columnName),
+					+ URLEncoder.encode(new String(bs),
 							DirectMappingEngine.encoding);
 			if (i < r.getValues().size())
 				blankNodeUniqName += fullStop;
@@ -722,7 +723,8 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 		ArrayList<String> columnNames = new ArrayList<String>();
 		columnNames.add(columnName);
 		URI p = convertCol(r, columnNames, baseURI);
-		String v = r.getValues().get(columnName);
+		final byte[] bs = r.getValues().get(columnName);
+		String v = new String(bs);
 		String d = header.getDatatypes().get(columnName);
 		if (v == null || v.equals("null")) {
 			// Don't keep triple with null value

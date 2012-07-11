@@ -33,12 +33,14 @@
 package net.antidot.sql.model.db;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 
 public class Row implements Tuple {
 
-	TreeMap<String, String> values;
+	SortedMap<String, byte[]> values;
 	StdBody parentBody;
 	int index;
 
@@ -54,36 +56,34 @@ public class Row implements Tuple {
 		this.parentBody = parentBody;
 	}
 
-	public Row(TreeMap<String, byte[]> values, StdBody parentBody, int index) throws UnsupportedEncodingException {
-		this.values = new TreeMap<String, String>();
+	public Row(SortedMap<String, byte[]> values, StdBody parentBody, int index) throws UnsupportedEncodingException {
+		this.values = new TreeMap<String, byte[]>();
 		if (values != null)
 			for (String key : values.keySet()){
 				byte[] bytesResult = values.get(key);
-				// Apply cast to string to the SQL data value
-				String value = null;
-				if (bytesResult != null) value = new String(bytesResult, "UTF-8");
-				this.values.put(key, value);
+				this.values.put(key, bytesResult);
 			}
 		this.parentBody = parentBody;
 		this.index = index;
 	}
 	
 
-	public TreeMap<String, String> getValues() {
+	public SortedMap<String, byte[]> getValues() {
 		return values;
 	}
 
-	public void setValues(TreeMap<String, String> values) {
+	public void setValues(SortedMap<String, byte[]> values) {
 		this.values = values;
 	}
 
 	public String toString() {
 		String result = "{[Row:toString] values = ";
 		int i = 0;
-		for (String columnName : values.navigableKeySet()) {
+		final int size = values.size();
+		for (Map.Entry<String, byte[]> entry : values.entrySet()) {
 			i++;
-			result += columnName + " => " + values.get(columnName);
-			if (i < values.size())
+			result += entry.getKey() + " => " + entry.getValue();
+			if (i < size)
 				result += ", ";
 		}
 		result += "; parentBody = " + parentBody;

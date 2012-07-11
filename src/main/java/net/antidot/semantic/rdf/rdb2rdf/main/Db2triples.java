@@ -212,7 +212,7 @@ public class Db2triples {
 		// RDF Format output
 		RDFFormat rdfFormat = RDFFormat.TURTLE; // Turtle by default
 		// Norm version
-		Version version = Version.WD_20110920;
+		Version version = Version.WD_20120529;
 
 		// Option parsing
 		// Create the parser
@@ -353,7 +353,7 @@ public class Db2triples {
 				}
 				switch (int_version) {
 				case 1:
-					version = Version.WD_20110920;
+					version = Version.WD_20120529;
 					break;
 				case 2:
 					version = Version.WD_20110324;

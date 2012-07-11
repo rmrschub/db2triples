@@ -92,18 +92,17 @@ public abstract class SQLConnector {
 	 */
 	public static void updateDatabase(Connection c, String pathToSQLFile)
 			throws SQLException {
-		if (log.isDebugEnabled()) log.debug("[SQLConnector:updateDatabase] pathToSQLFile = "
-				+ pathToSQLFile);
-		String s = new String();
-		StringBuffer sb = new StringBuffer();
+		log.debug("[SQLConnector:updateDatabase] pathToSQLFile = " + pathToSQLFile);
+		StringBuilder sb = new StringBuilder();
 		try {
 			FileReader fr = new FileReader(new File(pathToSQLFile));
 			// be sure to not have line starting with "--" or "/*" or any other
 			// non aplhabetical character
 			BufferedReader br = new BufferedReader(fr);
 
-			while ((s = br.readLine()) != null) {
-				sb.append(s);
+			int s = -1;
+			while ((s = br.read()) != -1) {
+				sb.appendCodePoint(s);
 			}
 			br.close();
 			// here is our splitter ! We use ";" as a delimiter for each request

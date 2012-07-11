@@ -50,9 +50,9 @@ public interface DirectMappingEngine {
 		 */
 		WD_20110324, 
 		/**
-		 * A Direct Mapping of Relational Data to RDF, W3C Working Draft 20 September 2011 
+		 * A Direct Mapping of Relational Data to RDF, W3C Working Draft 29 May 2012 
 		 */
-		WD_20110920;
+		WD_20120529;
 	}
 	
 	/**

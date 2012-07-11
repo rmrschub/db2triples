@@ -29,7 +29,7 @@
  ****************************************************************************/
 package net.antidot.sql.model.db;
 
-import java.util.TreeMap;
+import java.util.SortedMap;
 
 
 public interface Tuple {
@@ -50,12 +50,12 @@ public interface Tuple {
 	 * Get values contained in this tuple.
 	 * @return
 	 */
-	public TreeMap<String, String> getValues();
+	public SortedMap<String, byte[]> getValues();
 
 	/**
 	 * Set values contained in this tuple.
 	 * @param values
 	 */
-	public void setValues(TreeMap<String, String> values);
+	public void setValues(SortedMap<String, byte[]> values);
 
 }

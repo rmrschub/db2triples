@@ -164,9 +164,9 @@ public abstract class SpecificSQLToXMLS {
 		/**
 		 * Generic equivalences.
 		 */
-		equivalentTypes.put(SQLType.BINARY, XSDType.BASE_64_BINARY);
-		equivalentTypes.put(SQLType.BINARY_VARYING, XSDType.BASE_64_BINARY);
-		equivalentTypes.put(SQLType.BINARY_LARGE_OBJECT, XSDType.BASE_64_BINARY);
+		equivalentTypes.put(SQLType.BINARY, XSDType.HEXBINARY);
+		equivalentTypes.put(SQLType.BINARY_VARYING, XSDType.HEXBINARY);
+		equivalentTypes.put(SQLType.BINARY_LARGE_OBJECT, XSDType.HEXBINARY);
 		equivalentTypes.put(SQLType.NUMERIC, XSDType.DECIMAL);
 		equivalentTypes.put(SQLType.DECIMAL, XSDType.DECIMAL);
 		equivalentTypes.put(SQLType.SMALLINT, XSDType.INTEGER);
