@@ -600,9 +600,9 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 		// Generate predicates and objects
 		for (String columnName : fk.getColumnNames()) {
 			// For each column in candidate key, a literal triple is generated
-			Statement t = convertLex(row.getParentBody().getParentTable()
+			Statement t = convertLex(s, row.getParentBody().getParentTable()
 					.getHeader(), row, columnName, baseURI);
-			result.add(vf.createStatement(s, t.getPredicate(), t.getObject()));
+			result.add(t);
 		}
 		return result;
 	}
@@ -695,11 +695,10 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 		// Difference with preceding Working Draft : even unary foreign key are
 		// converted.
 		for (String columnName : currentTable.getHeader().getColumnNames()) {
-			Statement triple = convertLex(currentTable.getHeader(), r,
+			Statement triple = convertLex(s, currentTable.getHeader(), r,
 					columnName, baseURI);
 			if (triple != null) {
-				result.add(vf.createStatement(s, triple.getPredicate(),
-						triple.getObject()));
+				result.add(triple);
 			}
 		}
 		// Update current table
@@ -730,10 +729,27 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
-	private Statement convertLex(StdHeader header, Row r, String columnName,
-			String baseURI) throws UnsupportedEncodingException {
-		if (log.isDebugEnabled())
-			log.debug("[DirectMappingEngine:convertLex] Table "
+	
+	/**
+	 * Denotational semantics function : convert lexical columns into a triple
+	 * with mapped (predicate, object).
+	 * 
+	 * @param subject The subject to add for this triple.
+	 * @param header
+	 * @param r
+	 * @param columnName
+	 * @param baseURI
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	private Statement convertLex(
+		Resource subject,
+		StdHeader header,
+		Row r,
+		String columnName,
+		String baseURI) throws UnsupportedEncodingException {
+	    
+	    	log.debug("[DirectMappingEngine:convertLex] Table "
 					+ r.getParentBody().getParentTable().getTableName()
 					+ ", column : " + columnName);
 		Statement result = null;
@@ -782,7 +798,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 				l = vf.createLiteral(v_str, datatype_iri);
 			}
 		}
-		result = vf.createStatement(null, p, (Value) l);
+		result = vf.createStatement(subject, p, (Value) l);
 		return result;
 	}
 
