@@ -53,8 +53,9 @@ public abstract class RDFDataValidator {
 	 */
 	public static boolean isValidURI(String strURI) {
 		boolean isValid = false;
-		try {
-			// java.net.URI.create(strURI);
+		if(strURI == null)
+		    return false;
+		try {			
 			// All cases are not take into account... use openRDF library
 			vf.createURI(strURI);
 			// @todo : check if this rule is not too strict
