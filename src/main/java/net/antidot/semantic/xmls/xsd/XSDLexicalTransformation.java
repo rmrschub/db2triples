@@ -28,8 +28,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
-import sun.misc.BASE64Encoder;
-
 public class XSDLexicalTransformation {
 
     public enum Transformation {
