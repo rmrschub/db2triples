@@ -203,8 +203,7 @@ public abstract class R2RMLToolkit {
 				// Apply cast to string to the SQL data value
 				value = new String(byteValue, "UTF-8");
 			}
-			result = result.replaceAll("\\{" + column + "\\}", "'" + value
-					+ "'");
+			result = column.replaceAll(result, "'" + value + "'");
 			// Test backslashes result =
 			/*
 			 * result.replaceAll("\\{\\\"" + column + "\\\"\\}", "'" + result +
@@ -216,14 +215,9 @@ public abstract class R2RMLToolkit {
 		// Replace curly braces of not referenced column references
 		for (ColumnIdentifier column : columnReferences) {
 			if (!dbValues.keySet().contains(column)) {
-			    	String columnStr = column.toString();
-				result = result.replaceAll("\\{" + columnStr + "\\}", columnStr);
-				// Test backslashes result =
-				result.replaceAll("\\{\\\"" + columnStr + "\\\"\\}", columnStr);
-				result = result
-						.replaceAll("\\{\\'" + columnStr + "\\'\\}", columnStr);
-				result = result
-						.replaceAll("\\{\\`" + columnStr + "\\`\\}", columnStr);
+			    	result = column.replaceAll(result, column.toString());
+//				result = result.replaceAll("\\{\\'" + columnStr + "\\'\\}", columnStr);
+//				result = result.replaceAll("\\{\\`" + columnStr + "\\`\\}", columnStr);
 			}
 		}
 		// Curly braces that do not enclose column names MUST be
