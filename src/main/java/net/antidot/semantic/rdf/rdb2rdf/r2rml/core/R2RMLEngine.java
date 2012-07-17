@@ -659,6 +659,7 @@ public class R2RMLEngine {
 			// add the triple to the default graph of the output dataset.
 			triple = vf.createStatement(subject, predicate, object);
 			sesameDataSet.addStatement(triple);
+			log.debug("[R2RMLEngine:addStatement] Added new statement : " + triple);
 		}
 		for (URI targetGraph : targetGraphs) {
 			if (targetGraph.stringValue().equals(
@@ -675,8 +676,8 @@ public class R2RMLEngine {
 						targetGraph);
 			}
 			sesameDataSet.addStatement(triple);
+			log.debug("[R2RMLEngine:addStatement] Added new statement : " + triple);
 		}
-		log.debug("[R2RMLEngine:addStatement] Added new statement : " + triple);
 	}
 
 	private Map<ColumnIdentifier, byte[]> applyValueToRow(TermMap tm) throws SQLException {

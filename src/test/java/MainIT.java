@@ -241,7 +241,7 @@ public class MainIT extends TestCase {
 		}
 		// Serialize result
 		result.dumpRDF(directory + "/mapped" + suffix
-			+ "-db2triples.nq", RDFFormat.TURTLE);
+			+ "-db2triples.nq", RDFFormat.NQUADS);
 
 		// Load ref
 		SesameDataSet ref = new SesameDataSet();

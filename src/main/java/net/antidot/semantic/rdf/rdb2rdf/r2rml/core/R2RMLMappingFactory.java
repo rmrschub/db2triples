@@ -303,6 +303,8 @@ public abstract class R2RMLMappingFactory {
 		Set<PredicateObjectMap> predicateObjectMaps = extractPredicateObjectMaps(
 				r2rmlMappingGraph, triplesMapSubject, graphMaps, result,
 				triplesMapResources);
+		log.debug("[R2RMLMappingFactory:extractTriplesMap] Current number of created graphMaps : "
+			+ graphMaps.size());
 		// Fill triplesMap
 		for (PredicateObjectMap predicateObjectMap : predicateObjectMaps)
 			result.addPredicateObjectMap(predicateObjectMap);
@@ -346,7 +348,8 @@ public abstract class R2RMLMappingFactory {
 	}
 
 	private static PredicateObjectMap extractPredicateObjectMap(
-			SesameDataSet r2rmlMappingGraph, Resource predicateObject,
+			SesameDataSet r2rmlMappingGraph,
+			Resource predicateObject,
 			Set<GraphMap> savedGraphMaps,
 			Map<Resource, TriplesMap> triplesMapResources)
 			throws InvalidR2RMLStructureException, R2RMLDataError,
@@ -738,7 +741,8 @@ public abstract class R2RMLMappingFactory {
 	 * @throws InvalidR2RMLStructureException
 	 */
 	private static Set<Value> extractValuesFromResource(
-			SesameDataSet r2rmlMappingGraph, Resource termType,
+			SesameDataSet r2rmlMappingGraph,
+			Resource termType,
 			R2RMLVocabulary.R2RMLTerm term)
 			throws InvalidR2RMLStructureException {
 		URI p = r2rmlMappingGraph

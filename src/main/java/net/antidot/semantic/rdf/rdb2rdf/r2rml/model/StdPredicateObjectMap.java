@@ -123,8 +123,7 @@ public class StdPredicateObjectMap implements PredicateObjectMap {
 	}
 	
 	public void setGraphMaps(Set<GraphMap> graphMaps) {
-		this.graphMaps = new HashSet<GraphMap>();
-		graphMaps.addAll(graphMaps);
+		this.graphMaps = new HashSet<GraphMap>(graphMaps);
 	}
 
 }
