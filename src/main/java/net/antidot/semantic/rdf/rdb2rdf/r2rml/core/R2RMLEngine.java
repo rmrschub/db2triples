@@ -55,6 +55,8 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermType;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TriplesMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.db.ColumnIdentifier;
+import net.antidot.sql.model.db.ColumnIdentifierImpl;
 import net.antidot.sql.model.tools.SQLToolkit;
 import net.antidot.sql.model.type.SQLType;
 
@@ -208,7 +210,7 @@ public class R2RMLEngine {
 	/*
 	 * An inverse expression MUST satisfy the following condition.
 	 */
-	private void performInverseExpression(Map<String, byte[]> dbValues,
+	private void performInverseExpression(Map<ColumnIdentifier, byte[]> dbValues,
 			TermMap tm, String effectiveSQLQuery) throws SQLException,
 			R2RMLDataError, UnsupportedEncodingException {
 		// Every column reference in the inverse expression MUST
@@ -216,30 +218,21 @@ public class R2RMLEngine {
 		String inverseExpression = tm.getInverseExpression();
 		if (inverseExpression == null)
 			return;
-		Set<String> columnReferences = R2RMLToolkit
+		Set<ColumnIdentifier> columnReferences = R2RMLToolkit
 				.extractColumnNamesFromInverseExpression(inverseExpression);
-		Set<String> existingColumns = getExistingColumnNames();
-		for (String referencedColumns : columnReferences) {
-			if (!SQLToolkit.isDelimitedIdentifier(referencedColumns)){
-				boolean found = false;
-				for (String existingColumn : existingColumns)
-					if (existingColumn.toLowerCase().equals(referencedColumns.toLowerCase())) {
-						found = true;
-						break;
-					}
-				if (!found)
-					throw new R2RMLDataError(
-							"[R2RMLEngine:checkInverseExpression] Every column"
-									+ " reference in the inverse expression must be an existing column : "
-									+ referencedColumns + " does not exist.");
-			} else {
-				if (!existingColumns.contains(SQLToolkit.extractValueFromDelimitedIdentifier(referencedColumns)))
-					throw new R2RMLDataError(
-							"[R2RMLEngine:checkInverseExpression] Every column"
-									+ " reference in the inverse expression must be an existing column : "
-									+ referencedColumns + " does not exist.");
+		Set<ColumnIdentifier> existingColumns = getExistingColumnNames();
+		for (ColumnIdentifier referencedColumns : columnReferences) {
+		    boolean found = false;
+		    for (ColumnIdentifier existingColumn : existingColumns) {
+			if(existingColumn.equals(referencedColumns)) {
+			    found = true;
+			    break;
 			}
-		
+		    }
+		    if (!found)
+			throw new R2RMLDataError("[R2RMLEngine:checkInverseExpression] Every column"
+								+ " reference in the inverse expression must be an existing column : "
+								+ referencedColumns + " does not exist.");
 		}
 		// Let instantiation(r)
 		String instantiation = R2RMLToolkit
@@ -265,13 +258,13 @@ public class R2RMLEngine {
 
 	}
 
-	private Set<String> getExistingColumnNames() throws SQLException {
-		Set<String> result = new HashSet<String>();
+	private Set<ColumnIdentifier> getExistingColumnNames() throws SQLException {
+		Set<ColumnIdentifier> result = new HashSet<ColumnIdentifier>();
 		for (int i = 1; i <= meta.getColumnCount(); i++)
-			result.add(meta.getColumnLabel(i));
+		    result.add(ColumnIdentifierImpl.buildFromJDBCResultSet(meta, i));
 		if (referencingRows != null)
 			for (int i = 1; i <= referencingRows.getMetaData().getColumnCount(); i++)
-				result.add(referencingRows.getMetaData().getColumnLabel(i));
+			    	result.add(ColumnIdentifierImpl.buildFromJDBCResultSet(referencingRows.getMetaData(), i));
 		return result;
 	}
 
@@ -328,9 +321,9 @@ public class R2RMLEngine {
 		// but the first n columns of row : see step 5
 		// 3. Let subject be the generated RDF term that results from
 		// applying sm to child_row
-		Map<String, byte[]> smFromRow = applyValueToChildRow(sm, n);
+		Map<ColumnIdentifier, byte[]> smFromRow = applyValueToChildRow(sm, n);
 		boolean nullFound = false;
-		for (String value : smFromRow.keySet())
+		for (ColumnIdentifier value : smFromRow.keySet())
 			if (smFromRow.get(value) == null) {
 				log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
 				nullFound = true;
@@ -347,7 +340,7 @@ public class R2RMLEngine {
 		// child_row
 		Set<URI> predicates = new HashSet<URI>();
 		for (PredicateMap pm : predicateObjectMap.getPredicateMaps()) {
-			Map<String, byte[]> pmFromRow = applyValueToChildRow(pm, n);
+			Map<ColumnIdentifier, byte[]> pmFromRow = applyValueToChildRow(pm, n);
 			URI predicate = (URI) extractValueFromTermMap(pm, pmFromRow,
 					triplesMap);
 			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate : "
@@ -356,7 +349,7 @@ public class R2RMLEngine {
 		}
 		// 5. Let object be the generated RDF term that results from applying
 		// psm to parent_row
-		Map<String, byte[]> omFromRow = applyValueToParentRow(psm, n);
+		Map<ColumnIdentifier, byte[]> omFromRow = applyValueToParentRow(psm, n);
 		Resource object = (Resource) extractValueFromTermMap(psm, omFromRow,
 				psm.getOwnTriplesMap());
 		log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate object : "
@@ -365,7 +358,7 @@ public class R2RMLEngine {
 		// from applying each graph map of sgm to child_row
 		Set<URI> subject_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : sgm) {
-			Map<String, byte[]> sgmFromRow = applyValueToChildRow(graphMap, n);
+			Map<ColumnIdentifier, byte[]> sgmFromRow = applyValueToChildRow(graphMap, n);
 			URI subject_graph = (URI) extractValueFromTermMap(graphMap,
 					sgmFromRow, triplesMap);
 			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate subject graph : "
@@ -376,7 +369,7 @@ public class R2RMLEngine {
 		// that result from applying each graph map in pogm to child_row
 		Set<URI> predicate_object_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : pogm) {
-			Map<String, byte[]> pogmFromRow = applyValueToChildRow(graphMap, n);
+			Map<ColumnIdentifier, byte[]> pogmFromRow = applyValueToChildRow(graphMap, n);
 			URI predicate_object_graph = (URI) extractValueFromTermMap(
 					graphMap, pogmFromRow, triplesMap);
 			log.debug("[R2RMLEngine:generateRDFTriplesFromReferencingRow] Generate predicate object graph : "
@@ -406,28 +399,18 @@ public class R2RMLEngine {
 	 * @throws SQLException
 	 * @throws R2RMLDataError
 	 */
-	private Map<String, byte[]> applyValueToParentRow(TermMap tm, int n)
+	private Map<ColumnIdentifier, byte[]> applyValueToParentRow(TermMap tm, int n)
 			throws SQLException, R2RMLDataError {
-		Map<String, byte[]> result = new HashMap<String, byte[]>();
-		Set<String> columns = tm.getReferencedColumns();
+		Map<ColumnIdentifier, byte[]> result = new HashMap<ColumnIdentifier, byte[]>();
+		Set<ColumnIdentifier> columns = tm.getReferencedColumns();
 		ResultSetMetaData referencingMetas = referencingRows.getMetaData();
-		for (String column : columns) {
+		for (ColumnIdentifier column : columns) {
 			int m = -1;
 			for (int i = 1; i <= referencingMetas.getColumnCount(); i++) {
-				if (!SQLToolkit.isDelimitedIdentifier(column)) {
-					// Check case-insensitive SQL operations
-					if (referencingMetas.getColumnName(i).toLowerCase()
-							.equals(column.toLowerCase())) {
-						m = i;
-					}
-				} else {
-					if (referencingMetas
-							.getColumnName(i)
-							.equals(SQLToolkit
-									.extractValueFromDelimitedIdentifier(column))) {
-						m = i;
-					}
-				}
+			    ColumnIdentifier refCol = ColumnIdentifierImpl.buildFromJDBCResultSet(referencingMetas, i);
+			    if(refCol.equals(column)) {
+				m = i;
+			    }
 
 			}
 			if (m == -1)
@@ -452,30 +435,18 @@ public class R2RMLEngine {
 	 * @throws SQLException
 	 * @throws R2RMLDataError
 	 */
-	private Map<String, byte[]> applyValueToChildRow(TermMap tm, int n)
+	private Map<ColumnIdentifier, byte[]> applyValueToChildRow(TermMap tm, int n)
 			throws SQLException, R2RMLDataError {
-		Map<String, byte[]> result = new HashMap<String, byte[]>();
-		Set<String> columns = tm.getReferencedColumns();
+		Map<ColumnIdentifier, byte[]> result = new HashMap<ColumnIdentifier, byte[]>();
+		Set<ColumnIdentifier> columns = tm.getReferencedColumns();
 		ResultSetMetaData referencingMetas = referencingRows.getMetaData();
-		for (String column : columns) {
+		for (ColumnIdentifier column : columns) {
 			int m = -1;
 			for (int i = 1; i <= referencingMetas.getColumnCount(); i++) {
-				
-				if (!SQLToolkit.isDelimitedIdentifier(column)) {
-					// Check case-insensitive SQL operations
-					if (referencingMetas.getColumnName(i).toLowerCase()
-							.equals(column.toLowerCase())) {
-						m = i;
-						break;
-					}
-				} else {
-					if (referencingMetas
-							.getColumnName(i)
-							.equals(SQLToolkit
-									.extractValueFromDelimitedIdentifier(column))) {
-						m = i;
-						break;
-					}
+				ColumnIdentifier refCol = ColumnIdentifierImpl.buildFromJDBCResultSet(referencingMetas, i);
+				if ( refCol.equals(column)) {
+				    m = i;
+				    break;
 				}
 			}
 			if (m == -1)
@@ -497,7 +468,7 @@ public class R2RMLEngine {
 
 		// 1. Let subject be the generated RDF term that results from applying
 		// sm to row
-		Map<String, byte[]> smFromRow = applyValueToRow(sm);
+		Map<ColumnIdentifier, byte[]> smFromRow = applyValueToRow(sm);
 		Resource subject = (Resource) extractValueFromTermMap(sm, smFromRow,
 				triplesMap);
 		if (subject == null) {
@@ -511,7 +482,7 @@ public class R2RMLEngine {
 		// that result from applying each term map in sgm to row
 		Set<URI> subject_graphs = new HashSet<URI>();
 		for (GraphMap graphMap : sgm) {
-			Map<String, byte[]> sgmFromRow = applyValueToRow(graphMap);
+			Map<ColumnIdentifier, byte[]> sgmFromRow = applyValueToRow(graphMap);
 			URI subject_graph = (URI) extractValueFromTermMap(graphMap,
 					sgmFromRow, triplesMap);
 			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate subject graph : "
@@ -535,7 +506,7 @@ public class R2RMLEngine {
 	}
 
 	private Value extractValueFromTermMap(TermMap tm,
-			Map<String, byte[]> smFromRow, TriplesMap triplesMap)
+			Map<ColumnIdentifier, byte[]> smFromRow, TriplesMap triplesMap)
 			throws SQLException, R2RMLDataError, UnsupportedEncodingException {
 		Value result = null;
 		if (tm.getInverseExpression() != null) {
@@ -600,9 +571,9 @@ public class R2RMLEngine {
 		// row
 		Set<URI> predicates = new HashSet<URI>();
 		for (PredicateMap pm : predicateObjectMap.getPredicateMaps()) {
-			Map<String, byte[]> pmFromRow = applyValueToRow(pm);
+			Map<ColumnIdentifier, byte[]> pmFromRow = applyValueToRow(pm);
 			boolean nullFound = false;
-			for (String value : pmFromRow.keySet())
+			for (ColumnIdentifier value : pmFromRow.keySet())
 				if (pmFromRow.get(value) == null) {
 					log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
 					nullFound = true;
@@ -622,9 +593,9 @@ public class R2RMLEngine {
 		// maps) to row
 		Set<Value> objects = new HashSet<Value>();
 		for (ObjectMap om : predicateObjectMap.getObjectMaps()) {
-			Map<String, byte[]> omFromRow = applyValueToRow(om);
+			Map<ColumnIdentifier, byte[]> omFromRow = applyValueToRow(om);
 			boolean nullFound = false;
-			for (String value : omFromRow.keySet())
+			for (ColumnIdentifier value : omFromRow.keySet())
 				if (omFromRow.get(value) == null) {
 					log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] NULL found, this object will be ignored.");
 					nullFound = true;
@@ -646,7 +617,7 @@ public class R2RMLEngine {
 		if (subjectGraphs != null)
 			predicate_object_graphs.addAll(subjectGraphs);
 		for (GraphMap graphMap : pogm) {
-			Map<String, byte[]> pogmFromRow = applyValueToRow(graphMap);
+			Map<ColumnIdentifier, byte[]> pogmFromRow = applyValueToRow(graphMap);
 			URI predicate_object_graph = (URI) extractValueFromTermMap(
 					graphMap, pogmFromRow, triplesMap);
 			log.debug("[R2RMLEngine:genereateRDFTriplesFromRow] Generate predicate object graph : "
@@ -708,35 +679,31 @@ public class R2RMLEngine {
 		log.debug("[R2RMLEngine:addStatement] Added new statement : " + triple);
 	}
 
-	private Map<String, byte[]> applyValueToRow(TermMap tm) throws SQLException {
-		Map<String, byte[]> result = new HashMap<String, byte[]>();
-		Set<String> columns = tm.getReferencedColumns();
-		for (String column : columns) {
-			byte[] value = null;
-			if (!SQLToolkit.isDelimitedIdentifier(column)) {
-				String upValue = column.toUpperCase();
-				int i;
-				int n = rows.getMetaData().getColumnCount();
-				for (i = 1; i <= n; i++) {
-					String upColumnName = rows.getMetaData().getColumnLabel(i)
-							.toUpperCase();
-					if (upValue.equals(upColumnName)) {
-						log.debug("[R2RMLEngine:applyValueToRow] Case insensitive value found : "
-								+ rows.getString(i));
-						result.put(column, rows.getBytes(i));
-						break;
-					}
-				}
-				if (i == n + 1)
-					// Second chance fails...
-					throw new SQLException(
-							"[R2RMLEngine:applyValueToRow] Unknown column : "
-									+ column);
-			} else {
-				value = rows.getBytes(SQLToolkit
-						.extractValueFromDelimitedIdentifier(column));
-				result.put(column, value);
+	private Map<ColumnIdentifier, byte[]> applyValueToRow(TermMap tm) throws SQLException {
+		Map<ColumnIdentifier, byte[]> result = new HashMap<ColumnIdentifier, byte[]>();
+		Set<ColumnIdentifier> columns = tm.getReferencedColumns();
+		for (ColumnIdentifier column : columns) {
+		    log.debug("[R2RMLEngine:applyValueToRow] Iterate over : "
+				+ column);
+
+		    int i;
+		    final ResultSetMetaData metaData = rows.getMetaData();
+		    int n = metaData.getColumnCount();
+		    boolean found = false;
+		    for (i = 1; i <= n; i++) {
+			ColumnIdentifier cId = ColumnIdentifierImpl.buildFromJDBCResultSet(metaData, i);
+			if(cId.equals(column)) {
+				log.debug("[R2RMLEngine:applyValueToRow] Value found : "
+					+ rows.getString(i));
+				result.put(cId, rows.getBytes(i));
+				found = true;
+				break;
 			}
+		    }
+		    if (!found)
+			// Second chance fails...
+			throw new SQLException("[R2RMLEngine:applyValueToRow] Unknown column : "
+								+ column);
 		}
 		return result;
 	}
@@ -764,21 +731,21 @@ public class R2RMLEngine {
 		case IRI:
 			// 2. Otherwise, if the term map's term type is rr:IRI
 			URI iri = generateIRITermType(termMap, value);
-			log.debug("R2RMLEngine:generateRDFTerm] Generated IRI RDF Term : "
+			log.debug("[R2RMLEngine:generateRDFTerm] Generated IRI RDF Term : "
 					+ iri);
 			return (Value) iri;
 
 		case BLANK_NODE:
 			// 3. Otherwise, if the term map's term type is rr:BlankNode
 			BNode bnode = generateBlankNodeTermType(termMap, value);
-			log.debug("R2RMLEngine:generateRDFTerm] Generated Blank Node RDF Term : "
+			log.debug("[R2RMLEngine:generateRDFTerm] Generated Blank Node RDF Term : "
 					+ bnode);
 			return (Value) bnode;
 
 		case LITERAL:
 			// 4. Otherwise, if the term map's term type is rr:Literal
 			Value valueObj = generateLiteralTermType(termMap, value);
-			log.debug("R2RMLEngine:generateRDFTerm] Generated Literal RDF Term : "
+			log.debug("[R2RMLEngine:generateRDFTerm] Generated Literal RDF Term : "
 					+ valueObj);
 			return valueObj;
 
@@ -890,25 +857,13 @@ public class R2RMLEngine {
 				&& objectMap.getTermType() == TermType.LITERAL
 				&& objectMap.getConstantValue() == null) {
 			for (int i = 1; i <= meta.getColumnCount(); i++) {
-				String label = meta.getColumnLabel(i);
-				String referencedColumn = objectMap.getReferencedColumns()
-						.iterator().next();
-				if (!SQLToolkit.isDelimitedIdentifier(referencedColumn)) {
-					if (label.toUpperCase().equals(
-							referencedColumn.toUpperCase())) {
-						// Check case-insensitive SQL operations
-						result = SQLType.toSQLType(meta.getColumnType(i));
-						log.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype (case-insensitive) :  "
+				ColumnIdentifier referencedColumn = objectMap.getReferencedColumns()
+					.iterator().next();
+				ColumnIdentifier curCol = ColumnIdentifierImpl.buildFromJDBCResultSet(meta, i);
+			    	if(curCol.equals(referencedColumn)) {
+			    	    result = SQLType.toSQLType(meta.getColumnType(i));
+			    	    log.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype :  "
 								+ result);
-					}
-				} else {
-					if (label
-							.equals(SQLToolkit
-									.extractValueFromDelimitedIdentifier(referencedColumn))) {
-						result = SQLType.toSQLType(meta.getColumnType(i));
-						log.debug("[R2RMLEngine:extractImplicitDatatype] Extracted implicit datatype :  "
-								+ result);
-					}
 				}
 			}
 		}

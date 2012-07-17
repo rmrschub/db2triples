@@ -39,6 +39,8 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.db.ColumnIdentifier;
+import net.antidot.sql.model.db.ColumnIdentifierImpl;
 import net.antidot.sql.model.tools.SQLDataValidator;
 import net.antidot.sql.model.tools.SQLToolkit;
 import net.antidot.sql.model.type.SQLType;
@@ -60,12 +62,12 @@ public abstract class AbstractTermMap implements TermMap {
 	private XSDType implicitDataType;
 	private String languageTag;
 	private String stringTemplate;
-	private String columnValue;
+	private ColumnIdentifier columnValue;
 	private String inverseExpression;
 
 	protected AbstractTermMap(Value constantValue, URI dataType,
 			String languageTag, String stringTemplate, URI termType,
-			String inverseExpression, String columnValue)
+			String inverseExpression, ColumnIdentifier columnValue)
 			throws R2RMLDataError, InvalidR2RMLStructureException,
 			InvalidR2RMLSyntaxException {
 
@@ -123,21 +125,21 @@ public abstract class AbstractTermMap implements TermMap {
 
 	}
 
-	private void setColumnValue(String columnValue)
+	private void setColumnValue(ColumnIdentifier columnValue)
 			throws InvalidR2RMLSyntaxException, InvalidR2RMLStructureException {
 		// The value of the rr:column property MUST be a valid column name.
-		if (columnValue != null)
-			checkColumnValue(columnValue);
+//		if (columnValue != null)
+//			checkColumnValue(columnValue);
 		this.columnValue = columnValue;
 	}
 
-	private void checkColumnValue(String columnValue)
-			throws InvalidR2RMLSyntaxException {
-		if (!SQLDataValidator.isValidSQLIdentifier(columnValue))
-			throw new InvalidR2RMLSyntaxException(
-					"[AbstractTermMap:checkColumnValue] Not a valid column "
-							+ "value : " + termType);
-	}
+//	private void checkColumnValue(String columnValue)
+//			throws InvalidR2RMLSyntaxException {
+//		if (!SQLDataValidator.isValidSQLIdentifier(columnValue))
+//			throw new InvalidR2RMLSyntaxException(
+//					"[AbstractTermMap:checkColumnValue] Not a valid column "
+//							+ "value : " + termType);
+//	}
 
 	protected void setTermType(URI termType, URI dataType)
 			throws InvalidR2RMLSyntaxException, R2RMLDataError,
@@ -304,8 +306,8 @@ public abstract class AbstractTermMap implements TermMap {
 		return languageTag;
 	}
 
-	public Set<String> getReferencedColumns() {
-		Set<String> referencedColumns = new HashSet<String>();
+	public Set<ColumnIdentifier> getReferencedColumns() {
+		Set<ColumnIdentifier> referencedColumns = new HashSet<ColumnIdentifier>();
 		switch (getTermMapType()) {
 		case CONSTANT_VALUED:
 			// The referenced columns of a constant-valued term map is the
@@ -323,13 +325,17 @@ public abstract class AbstractTermMap implements TermMap {
 			// The referenced columns of a template-valued term map is
 			// the set of column names enclosed in unescaped curly braces
 			// in the template string.
-			referencedColumns.addAll(R2RMLToolkit
-					.extractColumnNamesFromStringTemplate(stringTemplate));
+		    	for(String colName : R2RMLToolkit
+					.extractColumnNamesFromStringTemplate(stringTemplate)) {
+		    	    referencedColumns.add(ColumnIdentifierImpl.buildFromR2RMLConfigFile(colName));
+		    	}
 			break;
 
 		default:
 			break;
 		}
+		log.debug("[AbstractTermMap:getReferencedColumns] ReferencedColumns are now : "
+			+ referencedColumns);		
 		return referencedColumns;
 	}
 
@@ -353,7 +359,7 @@ public abstract class AbstractTermMap implements TermMap {
 		return termType;
 	}
 
-	public String getColumnValue() {
+	public ColumnIdentifier getColumnValue() {
 		return columnValue;
 	}
 
@@ -374,7 +380,7 @@ public abstract class AbstractTermMap implements TermMap {
 		this.implicitDataType = implicitDataType;
 	}
 
-	public String getValue(Map<String, byte[]> dbValues,
+	public String getValue(Map<ColumnIdentifier, byte[]> dbValues,
 			ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException,
 			UnsupportedEncodingException {
 
@@ -388,32 +394,16 @@ public abstract class AbstractTermMap implements TermMap {
 			if (dbValues.keySet().isEmpty())
 				throw new IllegalStateException(
 						"[AbstractTermMap:getValue] impossible to extract from an empty database value set.");
-			// return dbValues.get(R2RMLToolkit.deleteBackSlash(columnValue));
-			byte[] bytesResult = null;
-			System.out.println(columnValue);
-			if (!SQLToolkit.isDelimitedIdentifier(columnValue)){
-				// Extract case-insensitve identifer 
-				for (String key : dbValues.keySet())
-					if (key.toLowerCase().equals(columnValue.toLowerCase())){
-						bytesResult = dbValues.get(key);
-						break;
-					}
-			}
-			else
-				bytesResult = dbValues.get(columnValue);
-			// Extract RDF Natural form
-			SQLType sqlType = null; 
-			for (int i = 1; i <= dbTypes.getColumnCount(); i++) {
-				if (!SQLToolkit.isDelimitedIdentifier(columnValue)){
-					// Extract case-insensitve identifer 
-					if (dbTypes.getColumnLabel(i).toLowerCase().equals(columnValue.toLowerCase())) 
-						sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
-				} else if (dbTypes
-							.getColumnLabel(i)
-							.equals(SQLToolkit.extractValueFromDelimitedIdentifier(columnValue))) 
-						sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
-					
-			}
+			byte[] bytesResult = dbValues.get(columnValue);
+			/* Extract the SQLType in dbValues from the key which is
+			 * equals to "columnValue" */
+			SQLType sqlType = null;			
+			for(ColumnIdentifier colId : dbValues.keySet()) {
+			    if(colId.equals(columnValue)) {
+				sqlType = colId.getSqlType();
+				break;
+			    }
+			}			    
 			// Apply cast to string to the SQL data value
 			String result;
 			if (sqlType != null) {

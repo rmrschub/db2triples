@@ -35,6 +35,7 @@ import java.util.Set;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.db.ColumnIdentifier;
 
 import org.openrdf.model.Value;
 
@@ -64,7 +65,7 @@ public interface TermMap {
 	 * The referenced columns of a term map are the set of column names
 	 * referenced in the term map and depend on the type of term map.
 	 */
-	public Set<String> getReferencedColumns();
+	public Set<ColumnIdentifier> getReferencedColumns();
 
 	/**
 	 * The constant value of a constant-valued term map is the RDF term that is
@@ -76,7 +77,7 @@ public interface TermMap {
 	 * The column value of the term map is the data value of that column in a
 	 * given logical table row. Only if COLUMN_VALUED type.
 	 */
-	public String getColumnValue();
+	public ColumnIdentifier getColumnValue();
 
 	/**
 	 * The value of the rr:template property MUST be a valid string template. A
@@ -160,6 +161,6 @@ public interface TermMap {
 	 * @return
 	 * @throws  
 	 */
-	public String getValue(Map<String, byte[]> dbValues, ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException, UnsupportedEncodingException;
+	public String getValue(Map<ColumnIdentifier, byte[]> dbValues, ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException, UnsupportedEncodingException;
 
 }

@@ -61,18 +61,4 @@ public class SQLToolkit {
 		rs2.relative(index2);
 		return result;
 	}
-	
-	/**
-	 * SQL identifiers can be delimited identifiers : with double quotes.
-	 * @return
-	 */
-	public static boolean isDelimitedIdentifier(String identifier){
-		return identifier != null && identifier.startsWith("\"") && identifier.endsWith("\"");
-	}
-	
-	public static String extractValueFromDelimitedIdentifier(String identifier){
-		if (!isDelimitedIdentifier(identifier)) return null;
-		return identifier.substring(1, identifier.length() - 1);
-	}
-
 }

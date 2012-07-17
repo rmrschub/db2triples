@@ -58,6 +58,8 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdSubjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdTriplesMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.SubjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TriplesMap;
+import net.antidot.sql.model.db.ColumnIdentifier;
+import net.antidot.sql.model.db.ColumnIdentifierImpl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -538,8 +540,9 @@ public abstract class R2RMLMappingFactory {
 				R2RMLTerm.DATATYPE);
 		String inverseExpression = extractLiteralFromTermMap(r2rmlMappingGraph,
 				object, R2RMLTerm.INVERSE_EXPRESSION);
-		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
+		String columnValueStr = extractLiteralFromTermMap(r2rmlMappingGraph,
 				object, R2RMLTerm.COLUMN);
+		ColumnIdentifier columnValue= ColumnIdentifierImpl.buildFromR2RMLConfigFile(columnValueStr);
 		StdObjectMap result = new StdObjectMap(null, constantValue, dataType,
 				languageTag, stringTemplate, termType, inverseExpression,
 				columnValue);
@@ -562,8 +565,9 @@ public abstract class R2RMLMappingFactory {
 
 		String inverseExpression = extractLiteralFromTermMap(r2rmlMappingGraph,
 				object, R2RMLTerm.INVERSE_EXPRESSION);
-		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
+		String columnValueStr = extractLiteralFromTermMap(r2rmlMappingGraph,
 				object, R2RMLTerm.COLUMN);
+		ColumnIdentifier columnValue= ColumnIdentifierImpl.buildFromR2RMLConfigFile(columnValueStr);
 		PredicateMap result = new StdPredicateMap(null, constantValue,
 				stringTemplate, inverseExpression, columnValue, termType);
 		log.debug("[R2RMLMappingFactory:extractPredicateMap] Extract predicate map done.");
@@ -615,8 +619,9 @@ public abstract class R2RMLMappingFactory {
 				subjectMap, R2RMLTerm.TERM_TYPE);
 		String inverseExpression = extractLiteralFromTermMap(r2rmlMappingGraph,
 				subjectMap, R2RMLTerm.INVERSE_EXPRESSION);
-		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
+		String columnValueStr = extractLiteralFromTermMap(r2rmlMappingGraph,
 				subjectMap, R2RMLTerm.COLUMN);
+		ColumnIdentifier columnValue= ColumnIdentifierImpl.buildFromR2RMLConfigFile(columnValueStr);		
 		Set<URI> classIRIs = extractURIsFromTermMap(r2rmlMappingGraph,
 				subjectMap, R2RMLTerm.CLASS);
 		Set<Value> graphMapValues = extractValuesFromResource(
@@ -659,8 +664,9 @@ public abstract class R2RMLMappingFactory {
 				graphMap, R2RMLTerm.TEMPLATE);
 		String inverseExpression = extractLiteralFromTermMap(r2rmlMappingGraph,
 				graphMap, R2RMLTerm.INVERSE_EXPRESSION);
-		String columnValue = extractLiteralFromTermMap(r2rmlMappingGraph,
+		String columnValueStr = extractLiteralFromTermMap(r2rmlMappingGraph,
 				graphMap, R2RMLTerm.COLUMN);
+		ColumnIdentifier columnValue= ColumnIdentifierImpl.buildFromR2RMLConfigFile(columnValueStr);		
 		URI termType = (URI) extractValueFromTermMap(r2rmlMappingGraph,
 				graphMap, R2RMLTerm.TERM_TYPE);
 

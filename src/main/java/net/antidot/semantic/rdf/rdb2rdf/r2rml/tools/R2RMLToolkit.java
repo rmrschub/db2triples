@@ -39,7 +39,8 @@ import net.antidot.semantic.rdf.rdb2rdf.commons.SQLToXMLS;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
-import net.antidot.sql.model.tools.SQLToolkit;
+import net.antidot.sql.model.db.ColumnIdentifier;
+import net.antidot.sql.model.db.ColumnIdentifierImpl;
 import net.antidot.sql.model.type.SQLType;
 
 import org.apache.commons.logging.Log;
@@ -140,10 +141,10 @@ public abstract class R2RMLToolkit {
 	 * @param value
 	 * @return
 	 */
-	public static Set<String> extractColumnNamesFromInverseExpression(
+	public static Set<ColumnIdentifier> extractColumnNamesFromInverseExpression(
 			String inverseExpression) {
 
-		Set<String> result = new HashSet<String>();
+		Set<ColumnIdentifier> result = new HashSet<ColumnIdentifier>();
 		if (inverseExpression != null) {
 			StringTokenizer st = new StringTokenizer(inverseExpression, "{}");
 			while (st.hasMoreElements()) {
@@ -154,7 +155,7 @@ public abstract class R2RMLToolkit {
 						&& inverseExpression.charAt(index - 1) == '{'
 						&& (inverseExpression.charAt(index + element.length()) == '}')) {
 					// result.add(deleteBackSlash(element));
-					result.add(element);
+					result.add(ColumnIdentifierImpl.buildFromR2RMLConfigFile(element));
 				}
 			}
 		}
@@ -178,15 +179,16 @@ public abstract class R2RMLToolkit {
 	 * @throws MalformedURLException
 	 */
 	public static String extractColumnValueFromInverseExpression(
-			String inverseExpression, Map<String, byte[]> dbValues,
-			Set<String> columnReferences) throws R2RMLDataError, SQLException,
+			String inverseExpression,
+			Map<ColumnIdentifier, byte[]> dbValues,
+			Set<ColumnIdentifier> columnReferences) throws R2RMLDataError, SQLException,
 			UnsupportedEncodingException {
 		// Let result be the template string
 		String result = inverseExpression;
 		if (dbValues == null)
 			return null;
 
-		for (String column : dbValues.keySet()) {
+		for (ColumnIdentifier column : dbValues.keySet()) {
 			// A quoted and escaped data value is any SQL
 			// string that matches the <literal> or <null specification>
 			// productions of [SQL2].
@@ -212,15 +214,16 @@ public abstract class R2RMLToolkit {
 			 */
 		}
 		// Replace curly braces of not referenced column references
-		for (String column : columnReferences) {
+		for (ColumnIdentifier column : columnReferences) {
 			if (!dbValues.keySet().contains(column)) {
-				result = result.replaceAll("\\{" + column + "\\}", column);
+			    	String columnStr = column.toString();
+				result = result.replaceAll("\\{" + columnStr + "\\}", columnStr);
 				// Test backslashes result =
-				result.replaceAll("\\{\\\"" + column + "\\\"\\}", column);
+				result.replaceAll("\\{\\\"" + columnStr + "\\\"\\}", columnStr);
 				result = result
-						.replaceAll("\\{\\'" + column + "\\'\\}", column);
+						.replaceAll("\\{\\'" + columnStr + "\\'\\}", columnStr);
 				result = result
-						.replaceAll("\\{\\`" + column + "\\`\\}", column);
+						.replaceAll("\\{\\`" + columnStr + "\\`\\}", columnStr);
 			}
 		}
 		// Curly braces that do not enclose column names MUST be
@@ -260,7 +263,8 @@ public abstract class R2RMLToolkit {
 	 * @throws MalformedURLException
 	 */
 	public static String extractColumnValueFromStringTemplate(
-			String stringTemplate, Map<String, byte[]> dbValues,
+			String stringTemplate,
+			Map<ColumnIdentifier, byte[]> dbValues,
 			ResultSetMetaData dbTypes) throws R2RMLDataError, SQLException,
 			UnsupportedEncodingException {
 		// Let result be the template string
@@ -268,34 +272,17 @@ public abstract class R2RMLToolkit {
 		String result = stringTemplate;
 		if (dbValues == null)
 			return null;
-		for (String dbValue : dbValues.keySet()) {
+		for (ColumnIdentifier dbValue : dbValues.keySet()) {
 			// For each pair of unescaped curly braces in result: if value is
 			// NULL, then return NULL
 			if (dbValues.get(dbValue) == null)
 				return null;
 		}
-		for (String column : dbValues.keySet()) {
+		for (ColumnIdentifier column : dbValues.keySet()) {
 			// Extract db value
-			byte[] byteValue = null;
-			if (!SQLToolkit.isDelimitedIdentifier(column)) {
-				// Extract case-insensitve identifer
-				for (String key : dbValues.keySet())
-					if (key.toLowerCase().equals(column.toLowerCase())) {
-						byteValue = dbValues.get(key);
-						break;
-					}
-			} else
-				byteValue = dbValues.get(column);
+			byte[] byteValue = dbValues.get(column);
 			// Extract RDF Natural form
-			SQLType sqlType = null;
-			for (int i = 1; i <= dbTypes.getColumnCount(); i++) {
-				// Extract case-insensitve identifer
-				if (dbTypes.getColumnLabel(i).toLowerCase()
-						.equals(column.toLowerCase()))
-					sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
-				else if (dbTypes.getColumnLabel(i).equals(SQLToolkit.extractValueFromDelimitedIdentifier(column)))
-					sqlType = SQLType.toSQLType(dbTypes.getColumnType(i));
-			}
+			SQLType sqlType = column.getSqlType();
 			// Apply cast to string to the SQL data value
 			String value;
 			if (sqlType != null) {
@@ -307,8 +294,7 @@ public abstract class R2RMLToolkit {
 			{
 			    value = new String(byteValue, "UTF-8");
 			}
-			result = result.replaceAll("\\{" + column + "\\}",
-					getIRISafeVersion(value));
+			result = column.replaceAll(result, getIRISafeVersion(value));
 			// Test backslashes result =
 			/*
 			 * result.replaceAll("\\{\\\"" + column + "\\\"\\}",
