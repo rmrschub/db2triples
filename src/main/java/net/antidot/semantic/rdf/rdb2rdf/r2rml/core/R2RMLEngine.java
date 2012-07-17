@@ -816,8 +816,11 @@ public class R2RMLEngine {
 		// auto-assignments of blank nodes.
 		if (value == null)
 			return vf.createBNode();
-		else
-			return vf.createBNode(value);
+		else {
+		    // Bug of Jena...
+		    String toUse = value.replace("%", "P").replace(";", "S").replace("=", "-").replace(".", "P");
+		    return vf.createBNode(toUse);
+		}
 	}
 
 	private URI generateIRITermType(TermMap termMap, String value)
