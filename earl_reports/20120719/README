@@ -28,11 +28,10 @@ All PostgreSQL test passed.
 All DirectMapping MySQL passed, only the R2RMLTC0002f failed in R2RML with MySQL, due to bad implementation of "regular identifier" and "delimited identifier" in MySQL
 
 
-Test modification
+Tests modification
 =================
-
-Because MySQL and PostgreSQL does not entirely respect SQL:2008, some modifications have been to the test case.
-A "diff file" is provided for earch of these drivers in the same directory as this README
+Because MySQL and PostgreSQL do not entirely respect SQL:2008, some modifications have been made to the test case.
+A "diff file" is provided for each of these drivers in the same directory as this README
 
 PostgreSQL
 ==========
@@ -50,9 +49,11 @@ and adapt begininng of hex data (replace X' by E'\\x
 MySQL
 =====
 To be more closer to the SQL:2008, JDBC connection have been made with the following option:
-> characterEncoding=utf8&sessionVariables=sql_mode='ANSI',storage_engine=InnoDB&padCharsWithSpace=true
+> characterEncoding=utf8
+> sessionVariables=sql_mode='ANSI'
+> storage_engine=InnoDB&padCharsWithSpace=true
 
-This made JDBC MySQL connecting request as:
+This makes JDBC MySQL connecting request as:
 jdbc:mysql://localhost/testing?characterEncoding=utf8&sessionVariables=sql_mode='ANSI',storage_engine=InnoDB&padCharsWithSpace=true
 
 Then, only the test 14 have been modified:
