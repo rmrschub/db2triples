@@ -34,6 +34,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLStructureExc
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.InvalidR2RMLSyntaxException;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.exception.R2RMLDataError;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.R2RMLMapping;
+import net.antidot.sql.model.core.DriverType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,6 +48,13 @@ public abstract class R2RMLProcessor {
 	
 	private static Long start = 0l;
 	
+	// JDBC used driver
+	private static DriverType driver;
+	
+	public static DriverType getDriverType() {
+	    return driver;
+	}	
+	
 	/**
 	 * Convert a database into a RDF graph from a database Connection
 	 * and a R2RML instance (with native storage).
@@ -58,7 +66,7 @@ public abstract class R2RMLProcessor {
 	 * @throws RepositoryException 
 	 */
 	public static SesameDataSet convertDatabase(Connection conn,
-			String pathToR2RMLMappingDocument, String baseIRI, String pathToNativeStore, String driver) throws InstantiationException,
+			String pathToR2RMLMappingDocument, String baseIRI, String pathToNativeStore, DriverType driver) throws InstantiationException,
 			IllegalAccessException, ClassNotFoundException, SQLException, R2RMLDataError, InvalidR2RMLStructureException, InvalidR2RMLSyntaxException, RepositoryException, RDFParseException, IOException {
 		log.info("[R2RMLMapper:convertMySQLDatabase] Start Mapping R2RML...");
 		// Init time
@@ -66,6 +74,7 @@ public abstract class R2RMLProcessor {
 		// Extract R2RML Mapping object
 		R2RMLMapping r2rmlMapping = null;
 		
+		R2RMLProcessor.driver = driver;
 		r2rmlMapping = R2RMLMappingFactory.extractR2RMLMapping(pathToR2RMLMappingDocument, driver);
 		
 		// Connect database
@@ -77,6 +86,8 @@ public abstract class R2RMLProcessor {
 				+ stop + " seconds.");
 		log.info("[R2RMLMapper:convertDatabase] Number of extracted triples : " +
 				result.getSize());
+		
+		R2RMLProcessor.driver = null;
 		return result;
 	}
 	
@@ -91,7 +102,7 @@ public abstract class R2RMLProcessor {
 	 * @throws RepositoryException 
 	 */
 	public static SesameDataSet convertDatabase(Connection conn,
-			String pathToR2RMLMappingDocument,  String baseIRI, String driver) throws InstantiationException,
+			String pathToR2RMLMappingDocument,  String baseIRI, DriverType driver) throws InstantiationException,
 			IllegalAccessException, ClassNotFoundException, SQLException, R2RMLDataError, InvalidR2RMLStructureException, InvalidR2RMLSyntaxException, RepositoryException, RDFParseException, IOException {
 		return convertDatabase(conn, pathToR2RMLMappingDocument, baseIRI, null, driver);
 	}

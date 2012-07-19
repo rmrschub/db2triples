@@ -34,6 +34,7 @@ import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
 import net.antidot.semantic.rdf.rdb2rdf.dm.core.DirectMapper;
 import net.antidot.semantic.rdf.rdb2rdf.dm.core.DirectMappingEngine.Version;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.core.SQLConnector;
 
 import org.apache.commons.cli.CommandLine;
@@ -53,9 +54,8 @@ public class Db2triples {
 
 	// Log
 	private static Log log = LogFactory.getLog(Db2triples.class);
-
-	private static String MYSQL_DRIVER = "com.mysql.jdbc.Driver";
-	private static String POSTGRE_DRIVER = "org.postgresql.Driver";
+	
+	private static final DriverType defaultDriver = DriverType.MysqlDriver;
 
 	private static Option modeOpt = OptionBuilder
 			.withArgName("mode")
@@ -80,7 +80,7 @@ public class Db2triples {
 
 	private static Option driverOpt = OptionBuilder.withArgName("driver")
 			.hasArg().withDescription(
-					"Driver to use (default : " + MYSQL_DRIVER + " )")
+					"Driver to use (default : " + defaultDriver.getDriverName() + " )")
 			.withLongOpt("driver").create("d");
 
 	private static Option versionOpt = OptionBuilder
@@ -196,7 +196,7 @@ public class Db2triples {
 		String userName = null;
 		String password = null;
 		String url = null;
-		String driver = null;
+		DriverType driver = null;
 		String dbName = null;
 		String baseURI = null;
 		boolean useNativeStore = false;
@@ -271,7 +271,7 @@ public class Db2triples {
 			// Database URL
 			url = line.getOptionValue("url", "jdbc:mysql://localhost/");
 			// driver
-			driver = line.getOptionValue("driver", MYSQL_DRIVER);
+			driver = new DriverType(line.getOptionValue("driver", defaultDriver.getDriverName()));
 			// Database name
 			if (!line.hasOption("database")) {
 				// automatically generate the help statement
@@ -333,8 +333,7 @@ public class Db2triples {
 				else if (format.equals("NTRIPLES"))
 					rdfFormat = RDFFormat.NTRIPLES;
 				else if (!format.equals("N3")) {
-					log
-							.error("Unknown RDF format. Please use RDFXML, TURTLE, N3 or NTRIPLES.");
+					log.error("Unknown RDF format. Please use RDFXML, TURTLE, N3 or NTRIPLES.");
 					HelpFormatter formatter = new HelpFormatter();
 					if (mode.equals("r2rml")) {
 						formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
@@ -348,8 +347,7 @@ public class Db2triples {
 			// Norm version
 			if (line.hasOption("version")) {
 				if (!mode.equals("dm")) {
-					log
-							.warn("version option is required only for 'dm' mode : it will be ignored...");
+					log.warn("version option is required only for 'dm' mode : it will be ignored...");
 				}
 				switch (int_version) {
 				case 1:
@@ -358,10 +356,9 @@ public class Db2triples {
 				case 2:
 					version = Version.WD_20110324;
 					// Check DB compatibilities
-					if (!(driver.equals(MYSQL_DRIVER) || driver
-							.equals(POSTGRE_DRIVER))) {
-						log
-								.error("Db2triples in Direct Mapping mode does'nt support this driver for the Working Draft"
+					if (!(driver.equals(DriverType.MysqlDriver) || driver
+							.equals(DriverType.PostgreSQL))) {
+						log.error("Db2triples in Direct Mapping mode does'nt support this driver for the Working Draft"
 										+ " of 23 March 2011 (only MySQL and PostGreSQL for this time). "
 										+ "You can set the version option to select Working Draft of 20 September 2011.");
 						System.exit(-1);
@@ -418,7 +415,7 @@ public class Db2triples {
 				}
 				// Extract database model according to convert mode
 				if (mode.equals("r2rml")) {
-					g = R2RMLProcessor.convertDatabase(conn, r2rmlFile, baseURI, nativeOutput);
+					g = R2RMLProcessor.convertDatabase(conn, r2rmlFile, baseURI, nativeOutput, driver);
 				} else {
 					g = DirectMapper.generateDirectMapping(conn, version,
 							driver, baseURI, null, nativeOutput);
@@ -433,10 +430,6 @@ public class Db2triples {
 					System.exit(-1);
 				}
 				// Extract database model
-				/**
-				 * Database db = SQLExtractor.extractMySQLDatabase(conn, null,
-				 * driver); g = DirectMapper.generateDirectMapping(db, baseURI);
-				 **/
 				if (mode.equals("r2rml")){
 					g = R2RMLProcessor.convertDatabase(conn, r2rmlFile, baseURI, driver);
 				} else {
@@ -459,8 +452,7 @@ public class Db2triples {
 				Float stop = Float.valueOf(System.currentTimeMillis() - start) / 1000;
 				log.info("Direct Mapping SPARQL query executed in "
 						+ stop + " seconds.");
-				log
-						.info("[DirectMapping:main] Number of triples after transformation : "
+				log.info("[DirectMapping:main] Number of triples after transformation : "
 								+ gResult.getSize());
 			}
 		} catch (Exception e) {

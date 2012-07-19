@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.core.SQLConnector;
 import net.antidot.sql.model.db.Key;
 import net.antidot.sql.model.db.Tuple;
@@ -74,7 +75,7 @@ public class TupleExtractor {
 	private DatabaseMetaData metas;
 	private Connection conn;
 	private DirectMappingEngine engine;
-	private String driver;
+	private DriverType driver;
 	private String timeZone;
 
 	// Metrics data
@@ -83,7 +84,7 @@ public class TupleExtractor {
 	private int lastModuloValue;
 
 	public TupleExtractor(Connection conn, DirectMappingEngine engine,
-			String driver, String timeZone) {
+			DriverType driver, String timeZone) {
 		if (conn == null)
 			throw new IllegalArgumentException(
 					"[TupleExtractor:TupleExtractor] A SQL connection is required !");
@@ -109,13 +110,11 @@ public class TupleExtractor {
 		if ((driver != null) && driver.equals("com.mysql.jdbc.Driver")
 				&& (timeZone == null)) {
 			if (log.isWarnEnabled())
-				log
-						.warn("[TupleExtractor:TupleExtractor] No time zone specified. Use database time zone by default.");
+				log.warn("[TupleExtractor:TupleExtractor] No time zone specified. Use database time zone by default.");
 			try {
 				this.timeZone = SQLConnector.getTimeZone(conn);
 			} catch (SQLException e) {
-				log
-						.error("[TupleExtractor:TupleExtractor] SQL error during time zone extraction.");
+				log.error("[TupleExtractor:TupleExtractor] SQL error during time zone extraction.");
 				e.printStackTrace();
 			}
 		} else {
@@ -128,7 +127,7 @@ public class TupleExtractor {
 	}
 
 	private void initConnections(DirectMappingEngine engine, Connection conn,
-			String driver) {
+			DriverType driver) {
 		this.engine = engine;
 		this.conn = conn;
 		this.driver = driver;
@@ -178,8 +177,7 @@ public class TupleExtractor {
 			nextTable();
 
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:initExtractor] Error SQL during extractor initialization.");
+			log.error("[TupleExtractor:initExtractor] Error SQL during extractor initialization.");
 			e.printStackTrace();
 		}
 	}
@@ -199,26 +197,24 @@ public class TupleExtractor {
 			if (!hasTables)
 				return false;
 			currentTableName = tablesSet.getString("TABLE_NAME");
-			log.info("Next table : "
-					+ currentTableName);
+			log.info("Next table : " + currentTableName);
 
-			extractMetrics(currentTableName);
-			extractSets(currentTableName);
+			extractMetrics();
+			extractSets();
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:nextTable] Error SQL during extracting next table.");
+			log.error("[TupleExtractor:nextTable] Error SQL during extracting next table.");
 			e.printStackTrace();
 		}
 		return hasTables;
 	}
 
-	private void extractMetrics(String tableName) {
+	private void extractMetrics() {
 		// Extract metrics
 		String metricsSQLQuery = null;
-		if (driver.equals(SQLConnector.mysqlDriver))
-			metricsSQLQuery = "SELECT COUNT(*) FROM `" + tableName + "`";
+		if (driver.equals(DriverType.MysqlDriver))
+			metricsSQLQuery = "SELECT COUNT(*) FROM `" + currentTableName + "`";
 		else
-			metricsSQLQuery = "SELECT COUNT(*) FROM \"" + tableName + "\"";
+			metricsSQLQuery = "SELECT COUNT(*) FROM \"" + currentTableName + "\"";
 		log.debug("[TupleExtractor:extractMetrics] Execute query : " + metricsSQLQuery);
 		Statement metricsStatement;
 		try {
@@ -227,49 +223,43 @@ public class TupleExtractor {
 					.executeQuery(metricsSQLQuery);
 			if (metricsSet.next()) {
 				int nbTuples = 0;
-				if (driver.equals(SQLConnector.mysqlDriver))
-					nbTuples = metricsSet.getInt("count(*)");
-				else
-					nbTuples = metricsSet.getInt("count");
+				nbTuples = metricsSet.getInt(1);
 				currentNbTuplesInTable = nbTuples;
 				currentNbTuplesExtractedInTable = 0;
 				lastModuloValue = 0;
-				log
-						.info("Number of tuples in this table : "
+				log.info("Number of tuples in this table : "
 								+ nbTuples);
 			} else {
 				currentNbTuplesInTable = -1;
 				currentNbTuplesExtractedInTable = -1;
 				lastModuloValue = 0;
-				log
-						.warn("[TupleExtractor:extractMetrics] Can not extract number of tuples in this table.");
+				log.warn("[TupleExtractor:extractMetrics] Can not extract number of tuples in this table.");
 			}
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:extractMetrics] Error SQL during extracting metrics sets.");
+			log.error("[TupleExtractor:extractMetrics] Error SQL during extracting metrics sets.");
 			e.printStackTrace();
 		}
 	}
-
-	private void extractSets(String tableName) {
+		
+	private void extractSets() {
 		// Extract header
 		try {
-			currentHeaderSet = metas.getColumns(null, null, tableName, null);
+			currentHeaderSet = metas.getColumns(null, null, currentTableName, null);
 			// Extract values
 			String SQLQuery = engine.constructSQLQuery(driver,
-					currentHeaderSet, tableName);
+					currentHeaderSet, currentTableName);
 			log.debug("[TupleExtractor:nextTable] Execute query : " + SQLQuery);
 			currentResultSet = currentStatement.executeQuery(SQLQuery);
-
+			
 			// Extract primary keys
 			currentPrimaryKeySet = metas.getPrimaryKeys(conn.getCatalog(),
 					null, currentTableName);
+						
 			// Extract foreign key
 			currentImportedKeySet = metas.getImportedKeys(conn.getCatalog(),
 					null, currentTableName);
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:extractSets] Error SQL during extracting context sets.");
+			log.error("[TupleExtractor:extractSets] Error SQL during extracting context sets.");
 			e.printStackTrace();
 		}
 	}
@@ -291,8 +281,7 @@ public class TupleExtractor {
 			reinitCurrentCursors();
 			updateMetrics();
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:next] Error SQL during extracting of next tuple.");
+			log.error("[TupleExtractor:next] Error SQL during extracting of next tuple.");
 			e.printStackTrace();
 		}
 		return hasNext;
@@ -311,8 +300,7 @@ public class TupleExtractor {
 				currentImportedKeySet.beforeFirst();
 			}
 		} catch (Exception e) {
-			log
-					.error("[TupleExtractor:reinitCurrentCursors] Error SQL during reinitilization of cursors.");
+			log.error("[TupleExtractor:reinitCurrentCursors] Error SQL during reinitilization of cursors.");
 			e.printStackTrace();
 		}
 	}
@@ -330,8 +318,7 @@ public class TupleExtractor {
 				currentImportedKeySet.beforeFirst();
 			}
 		} catch (Exception e) {
-			log
-					.error("[TupleExtractor:reinitCurrentCursors] Error SQL during reinitilization of referenced cursors.");
+			log.error("[TupleExtractor:reinitCurrentCursors] Error SQL during reinitilization of referenced cursors.");
 			e.printStackTrace();
 		}
 	}
@@ -346,8 +333,7 @@ public class TupleExtractor {
 			int modulo = ratio / moduloValueCheck;
 			if (modulo > lastModuloValue) {
 				lastModuloValue = modulo;
-				log.info("Extracted tuples : "
-						+ ratio + "%");
+				log.info("Extracted tuples : " + ratio + "%");
 			}
 		}
 	}
@@ -369,11 +355,9 @@ public class TupleExtractor {
 				if (engine.isPrimaryKey(key, tuple)) {
 					primaryIsForeignKey = getPrimaryIsForeignKey(key, tuple);
 					if (primaryIsForeignKey == null)
-						log
-								.warn("[TupleExtractor:getReferencedTuples] No primary-is-foreign key extracted whereas it's has been detected.");
+						log.warn("[TupleExtractor:getReferencedTuples] No primary-is-foreign key extracted whereas it's has been detected.");
 					else {
-						log
-								.debug("[TupleExtractor:getReferencedTuples] Primary-is-foreign key detected : "
+						log.debug("[TupleExtractor:getReferencedTuples] Primary-is-foreign key detected : "
 										+ primaryIsForeignKey);
 						break;
 					}
@@ -406,8 +390,7 @@ public class TupleExtractor {
 			currentReferencedPrimaryKeySet = referencedPrimaryKeyMap.get(referencedTableName);
 			currentReferencedImportedKeySet = referencedForeignKeyMap.get(referencedTableName);
 		} catch (SQLException e) {
-			log
-					.error("[TupleExtractor:extractSets] Error SQL during extracting context sets.");
+			log.error("[TupleExtractor:extractSets] Error SQL during extracting context sets.");
 			e.printStackTrace();
 		}
 	}
@@ -424,8 +407,7 @@ public class TupleExtractor {
 				String sqlQuery = engine.constructReferencedSQLQuery(driver,
 						currentReferencedHeaderSet, referencedTableName, key, tuple);
 				reinitCurrentReferencedCursors();
-				log
-						.debug("[TupleExtractor:getReferencedTuples] Execute query : "
+				log.debug("[TupleExtractor:getReferencedTuples] Execute query : "
 								+ sqlQuery);
 				ResultSet referencedValueSet = referencedStatement
 						.executeQuery(sqlQuery);
@@ -461,7 +443,7 @@ public class TupleExtractor {
 
 	}
 
-	public HashMap<Key, Tuple> getReferencedTuples(String driver, Tuple tuple) throws UnsupportedEncodingException {
+	public HashMap<Key, Tuple> getReferencedTuples(DriverType driver, Tuple tuple) throws UnsupportedEncodingException {
 		HashMap<Key, Tuple> result = new HashMap<Key, Tuple>();
 		try {
 			// Extract target name table
@@ -478,8 +460,7 @@ public class TupleExtractor {
 						throw new IllegalStateException(
 								"[TupleExtractor:getReferencedTuples] No primary-is-foreign key extracted whereas it's has been detected.");
 					else
-						log
-								.debug("[TupleExtractor:getReferencedTuples] Primary-is-foreign key detected : "
+						log.debug("[TupleExtractor:getReferencedTuples] Primary-is-foreign key detected : "
 										+ primaryIsForeignKey);
 				} else {
 					
@@ -490,8 +471,7 @@ public class TupleExtractor {
 							driver, currentReferencedHeaderSet, referencedTableName,
 							key, tuple);
 					reinitCurrentReferencedCursors();
-					log
-							.debug("[TupleExtractor:getReferencedTuples] Execute query : "
+					log.debug("[TupleExtractor:getReferencedTuples] Execute query : "
 									+ sqlQuery);
 					ResultSet referencedValueSet = referencedStatement
 							.executeQuery(sqlQuery);

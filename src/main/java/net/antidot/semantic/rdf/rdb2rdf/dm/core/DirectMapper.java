@@ -33,6 +33,7 @@ import java.util.HashSet;
 
 import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
 import net.antidot.semantic.rdf.rdb2rdf.dm.core.DirectMappingEngine.Version;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.db.Key;
 import net.antidot.sql.model.db.Tuple;
 
@@ -60,7 +61,7 @@ public abstract class DirectMapper extends Thread {
 	private static int nbTriples;
 	private static int lastModulo;
 	
-	public static SesameDataSet generateDirectMapping(Connection conn, Version version, String driver, String baseURI, String timeZone, String fileToNativeStore) throws UnsupportedEncodingException{
+	public static SesameDataSet generateDirectMapping(Connection conn, Version version, DriverType driver, String baseURI, String timeZone, String fileToNativeStore) throws UnsupportedEncodingException{
 		log.info("Generate Direct Mapping...");
 		Long start = System.currentTimeMillis();
 		SesameDataSet result = null;
@@ -96,7 +97,7 @@ public abstract class DirectMapper extends Thread {
 		return result;
 	}
 	
-	private static void convertNextTuple(SesameDataSet result, TupleExtractor te, DirectMappingEngine dme, String driver, String baseURI) throws UnsupportedEncodingException{
+	private static void convertNextTuple(SesameDataSet result, TupleExtractor te, DirectMappingEngine dme, DriverType driver, String baseURI) throws UnsupportedEncodingException{
 		Tuple tuple = te.getCurrentTuple();
 		//Tuple tuple = null;
 		log.debug("[DirectMapper:convertNextTuple] Tuple extracted : " + tuple);

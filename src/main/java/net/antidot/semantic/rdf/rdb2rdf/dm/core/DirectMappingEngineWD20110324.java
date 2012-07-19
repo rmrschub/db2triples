@@ -41,6 +41,7 @@ import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
 import net.antidot.semantic.rdf.rdb2rdf.commons.RDFPrefixes;
 import net.antidot.semantic.rdf.rdb2rdf.commons.SpecificSQLToXMLS;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.core.SQLConnector;
 import net.antidot.sql.model.db.CandidateKey;
 import net.antidot.sql.model.db.ForeignKey;
@@ -104,7 +105,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 */
 	public Tuple extractTupleFrom(ResultSet valueSet, ResultSet headerSet,
 			ResultSet primaryKeysSet, ResultSet foreignKeysSet,
-			String tableName, String driver, String timeZone, int index) throws UnsupportedEncodingException {
+			String tableName, DriverType driver, String timeZone, int index) throws UnsupportedEncodingException {
 		if (tableName != currentTableName)
 			// First table treatment
 			// Get datatypes
@@ -143,7 +144,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	 */
 	public Tuple extractReferencedTupleFrom(ResultSet valueSet,
 			ResultSet headerSet, ResultSet primaryKeysSet,
-			ResultSet foreignKeysSet, String tableName, String driver,
+			ResultSet foreignKeysSet, String tableName, DriverType driver,
 			String timeZone, int index) throws UnsupportedEncodingException {
 		// Get datatypes
 		LinkedHashMap<String, String> referencedDatatypes = extractDatatypes(
@@ -187,7 +188,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Extract a row from values datasets and its model.
 	 */
-	private Row extractRow(String driver, StdHeader header, String tableName,
+	private Row extractRow(DriverType driver, StdHeader header, String tableName,
 			ResultSet valueSet, String timeZone, int index) throws UnsupportedEncodingException {
 		TreeMap<String, byte[]> values = new TreeMap<String, byte[]>();
 		for (String columnName : header.getColumnNames()) {
@@ -390,7 +391,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Construct SQL Query from database sets in order to extract row from its table.
 	 */
-	public String constructSQLQuery(String driver, ResultSet headersSet,
+	public String constructSQLQuery(DriverType driver, ResultSet headersSet,
 			String tableName) {
 		LinkedHashMap<String, String> datatypes = extractDatatypes(headersSet,
 				tableName);
@@ -431,7 +432,7 @@ public class DirectMappingEngineWD20110324 implements DirectMappingEngine {
 	/*
 	 * Construct SQL Query from database sets in order to extract row from its table.
 	 */
-	public String constructReferencedSQLQuery(String driver,
+	public String constructReferencedSQLQuery(DriverType driver,
 			ResultSet headersSet, String tableName, Key key, Tuple tuple) {
 		// Explicit conversion
 		ForeignKey fk = (ForeignKey) key;

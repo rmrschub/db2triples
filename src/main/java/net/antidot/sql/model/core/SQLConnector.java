@@ -50,11 +50,7 @@ public abstract class SQLConnector {
 
 	// Log
 	private static Log log = LogFactory.getLog(SQLConnector.class);
-	
-	// JDBC driver types
-	public static String mysqlDriver = "com.mysql.jdbc.Driver";
-	public static String postgresqlDriver = "org.postgresql.Driver";
-	
+			
 	/**
 	 * Try to connect a database and returns current connection.
 	 * 
@@ -70,11 +66,11 @@ public abstract class SQLConnector {
 	 * @throws ClassNotFoundException
 	 */
 	static public Connection connect(String userName, String password,
-			String url, String driver, String database) throws SQLException,
+			String url, DriverType driver, String database) throws SQLException,
 			InstantiationException, IllegalAccessException,
 			ClassNotFoundException {
-		log.info("[SQLConnection:extractDatabase] Try to connect " + url + " with " + driver);
-		Class.forName(driver).newInstance();
+		log.info("[SQLConnection:extractDatabase] Try to connect " + url + database + " with " + driver);
+		Class.forName(driver.getDriverName()).newInstance();
 		Connection conn = DriverManager.getConnection(url + database, userName,
 				password);
 		log.info("[SQLConnection:extractDatabase] Database connection established.");
@@ -108,7 +104,8 @@ public abstract class SQLConnector {
 			// here is our splitter ! We use ";" as a delimiter for each request
 			// then we are sure to have well formed statements
 			String[] inst = sb.toString().split(";");
-			Statement st = c.createStatement();
+			Statement st = c.createStatement();			
+			
 			for (int i = 0; i < inst.length; i++) {
 				// we ensure that there is no spaces before or after the request
 				// string
@@ -131,7 +128,7 @@ public abstract class SQLConnector {
 	 * @param driver 
 	 * @throws SQLException
 	 */
-	public static void resetMySQLDatabase(Connection c, String driver) throws SQLException {
+	public static void resetMySQLDatabase(Connection c, DriverType driver) throws SQLException {
 		// Get tables of database
 		DatabaseMetaData meta = c.getMetaData();
 		ResultSet tablesSet = meta.getTables(c.getCatalog(), null, "%", null);
@@ -142,10 +139,10 @@ public abstract class SQLConnector {
 			// Get a statement from the connection
 			Statement stmt = c.createStatement();
 			// Execute the query
-			if (driver.equals("com.mysql.jdbc.Driver")){
+			if (driver == DriverType.MysqlDriver){
 				// MySQL compatibility
 				stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
-				stmt.execute("DROP TABLE `" + tableName + "`");
+				stmt.execute("DROP TABLE \"" + tableName + "\"");
 			} else {
 				if (tableType != null && tableType.equals("TABLE")) stmt.execute("DROP TABLE \"" + tableName + "\" CASCADE");
 			}

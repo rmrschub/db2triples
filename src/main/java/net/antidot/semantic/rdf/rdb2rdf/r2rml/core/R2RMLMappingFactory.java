@@ -58,6 +58,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdSubjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.StdTriplesMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.SubjectMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TriplesMap;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.db.ColumnIdentifier;
 import net.antidot.sql.model.db.ColumnIdentifierImpl;
 
@@ -81,10 +82,6 @@ public abstract class R2RMLMappingFactory {
 
 	// Value factory
 	private static ValueFactory vf = new ValueFactoryImpl();
-	// JDBC used driver
-	// TODO : maybe driver parameter will be later use for db compatibility
-	@SuppressWarnings("unused")
-	private static String driver;
 	
 	/**
 	 * Extract R2RML Mapping object from a R2RML file written with Turtle
@@ -109,11 +106,9 @@ public abstract class R2RMLMappingFactory {
 	 * @throws RDFParseException 
 	 * @throws RepositoryException 
 	 */
-	public static R2RMLMapping extractR2RMLMapping(String fileToR2RMLFile, String driver)
+	public static R2RMLMapping extractR2RMLMapping(String fileToR2RMLFile, DriverType driver)
 			throws InvalidR2RMLStructureException, InvalidR2RMLSyntaxException,
 			R2RMLDataError, RepositoryException, RDFParseException, IOException {
-		// Save driver
-		R2RMLMappingFactory.driver = driver;
 		// Load RDF data from R2RML Mapping document
 		SesameDataSet r2rmlMappingGraph = new SesameDataSet();
 		r2rmlMappingGraph.loadDataFromFile(fileToR2RMLFile, RDFFormat.TURTLE);

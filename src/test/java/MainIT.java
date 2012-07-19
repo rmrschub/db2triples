@@ -1,11 +1,7 @@
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Vector;
@@ -15,18 +11,16 @@ import net.antidot.semantic.rdf.model.impl.sesame.SesameDataSet;
 import net.antidot.semantic.rdf.rdb2rdf.dm.core.DirectMapper;
 import net.antidot.semantic.rdf.rdb2rdf.dm.core.DirectMappingEngine;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.core.SQLConnector;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.openrdf.repository.RepositoryException;
 import org.openrdf.rio.RDFFormat;
-import org.openrdf.rio.RDFParseException;
 
 @RunWith(Parameterized.class)
 public class MainIT extends TestCase {
@@ -46,25 +40,27 @@ public class MainIT extends TestCase {
     private static final String baseURI = "http://example.com/base/";
 
     // R2RML suffix. To be improved!
-    private static final String[] r2rmlSuffix = { "", "a", "b", "c", "d", "e",
-	    "f", "g", "h", "i", "j", "k" };
+    private static final String[] r2rmlSuffixes = { "", "a", "b", "c", "d",
+	    "e", "f", "g", "h", "i", "j", "k" };
 
     // Database TEST settings
     private static String userName = Settings.userName;
     private static String password = Settings.password;
     private static String url = Settings.url;
-    private static String driver = Settings.driver;
+    private static DriverType driver = Settings.driver;
 
     // Instance field
 
     private NormTested tested = null;
     private String directory = null;
+    private String r2rmlSuffix = null;
 
-    public MainIT(NormTested tested, String directory) throws SQLException,
-	    InstantiationException, IllegalAccessException,
-	    ClassNotFoundException {
+    public MainIT(NormTested tested, String directory, String suffix)
+	    throws SQLException, InstantiationException,
+	    IllegalAccessException, ClassNotFoundException {
 	this.tested = tested;
 	this.directory = directory;
+	this.r2rmlSuffix = suffix;
     }
 
     @Parameters
@@ -85,39 +81,52 @@ public class MainIT extends TestCase {
 		    continue;
 		}
 		final String file_path = f.getAbsolutePath();
-		for (NormTested norm : NormTested.values()) {
-		    parameters.add(new Object[] { norm, file_path });
-
-		    log.info("[W3CTester:test] Create parameter " + (i++)
-			    + " : {" + norm.name() + " ; " + file_path + "}");
+		// DirectMapping, create directly test
+		parameters.add(new Object[] { NormTested.DirectMapping,
+			file_path, null });
+		log.info("[W3CTester:test] Create parameter " + (i++)
+			+ " : {DirectMapping ; " + file_path + "}");
+		// Test suffix to create R2RML tests
+		for (String suffix : r2rmlSuffixes) {
+		    // Create R2RML Mapping
+		    final String test_filepath = file_path + "/r2rml" + suffix
+			    + ".ttl";
+		    if ((new File(test_filepath)).exists()) {
+			parameters.add(new Object[] { NormTested.R2RML,
+				file_path, suffix });
+			log.info("[W3CTester:test] Create parameter " + (i++)
+				+ " : {R2RML ; " + file_path + " ; " + suffix
+				+ "}");
+		    }
 		}
 	    }
 	}
 	return parameters;
     }
 
-    private Connection getNewConnection() throws SQLException,
+    private Connection getNewConnection(String parameter) throws SQLException,
 	    InstantiationException, IllegalAccessException,
 	    ClassNotFoundException {
 	log.info("[W3CTester:getNewConnection] Create new DB connection");
 	return SQLConnector.connect(userName, password, url, driver,
-		Settings.testDbName);
+		Settings.testDbName + parameter);
     }
-    
-//    @Test
-//    public void testAsCaseSensitive() throws Exception {
-//	Connection conn = DriverManager.getConnection("jdbc:postgresql://127.0.0.1:5432/test",
-//		"root","root");
-//	java.sql.Statement s = conn.createStatement(
-//		ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CONCUR_READ_ONLY);
-//	s.executeQuery("Select ('Student' || \"ID\" ) AS StudentId, \"Name\", \"name\" from \"Student\";");
-//	ResultSet rs = s.getResultSet();
-//	ResultSetMetaData metaData = rs.getMetaData();
-//	int n = metaData.getColumnCount();
-//	for (int i = 1; i <= n; i++) {
-//	    System.out.println("Column: "+metaData.getColumnLabel(i)+" "+metaData.isCaseSensitive(i));
-//	}	
-//    }
+
+    // @Test
+    // public void testAsCaseSensitive() throws Exception {
+    // Connection conn =
+    // DriverManager.getConnection("jdbc:postgresql://127.0.0.1:5432/test",
+    // "root","root");
+    // java.sql.Statement s = conn.createStatement(
+    // ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CONCUR_READ_ONLY);
+    // s.executeQuery("Select ('Student' || \"ID\" ) AS StudentId, \"Name\", \"name\" from \"Student\";");
+    // ResultSet rs = s.getResultSet();
+    // ResultSetMetaData metaData = rs.getMetaData();
+    // int n = metaData.getColumnCount();
+    // for (int i = 1; i <= n; i++) {
+    // System.out.println("Column: "+metaData.getColumnLabel(i)+" "+metaData.isCaseSensitive(i));
+    // }
+    // }
 
     @Test
     public void testNorm() throws Exception {
@@ -128,7 +137,11 @@ public class MainIT extends TestCase {
 	    {
 		// Clean TEST table
 		log.info("[W3CTester:testNorm] Clean test database...");
-		Connection conn = getNewConnection();
+		String parameters = "";
+		if (driver.equals(DriverType.MysqlDriver)) {
+		    parameters = "?characterEncoding=utf8&sessionVariables=sql_mode='ANSI',storage_engine=InnoDB";
+		}
+		Connection conn = getNewConnection(parameters);
 		SQLConnector.resetMySQLDatabase(conn, driver);
 		// Load TEST database
 		log.info("[W3CTester:testNorm] Load new tables...");
@@ -178,7 +191,11 @@ public class MainIT extends TestCase {
 	SesameDataSet result;
 	Connection conn = null;
 	try {
-	    conn = getNewConnection();
+	    String parameters = "";
+	    if (driver.equals(DriverType.MysqlDriver)) {
+		parameters = "?characterEncoding=utf8&padCharsWithSpace=true";
+	    }
+	    conn = getNewConnection(parameters);
 	    result = DirectMapper.generateDirectMapping(conn,
 		    DirectMappingEngine.Version.WD_20120529, driver, baseURI,
 		    null, null);
@@ -207,57 +224,57 @@ public class MainIT extends TestCase {
     }
 
     private void runR2RML() throws Exception {
-	// Create Direct Mapping
-	for (String suffix : r2rmlSuffix) {
-	    // Create R2RML Mapping
-	    final String test_filepath = directory + "/r2rml" + suffix + ".ttl";
-	    final String mapped_filepath = directory + "/mapped" + suffix
-		    + ".nq";
-	    File r2rml_def_file = new File(test_filepath);
-	    if (r2rml_def_file.exists()) {
-		log.info("[W3CTester:runR2RML] Working on test: "
-			+ test_filepath);
-		SesameDataSet result;
-		Connection conn = null;
-		try {
-		    conn = getNewConnection();
-		    result = R2RMLProcessor.convertDatabase(conn,
-			    r2rml_def_file.getAbsolutePath(), baseURI, driver);
+	// Create R2RML Mapping
+	final String test_filepath = directory + "/r2rml" + r2rmlSuffix
+		+ ".ttl";
+	final String mapped_filepath = directory + "/mapped" + r2rmlSuffix
+		+ ".nq";
+	File r2rml_def_file = new File(test_filepath);
+	if (r2rml_def_file.exists()) {
+	    log.info("[W3CTester:runR2RML] Working on test: " + test_filepath);
+	    SesameDataSet result;
+	    Connection conn = null;
+	    try {
+		String parameters = "";
+		if (driver.equals(DriverType.MysqlDriver)) {
+		    parameters = "?padCharsWithSpace=true";
 		}
-		catch (Exception e) {
-		    if ((new File(mapped_filepath)).exists()) {
-			e.printStackTrace();
-			fail("R2RML error: " + directory);
-		    }
-		    else {
-			log.info("[W3CTester:runR2RML] R2RML data was not valid");
-		    }
-		    continue;
-		}
-		finally {
-		    if (conn != null) {
-			conn.close();
-		    }
-		}
-		// Serialize result
-		result.dumpRDF(directory + "/mapped" + suffix
-			+ "-db2triples.nq", RDFFormat.NQUADS);
-
-		// Load ref
-		SesameDataSet ref = new SesameDataSet();
-		try {
-		    ref.loadDataFromFile(mapped_filepath, RDFFormat.NQUADS);
-		}
-		catch (Exception e) {
-		    e.printStackTrace();
-		    fail("Unable to load ref " + mapped_filepath);
-		    continue;
-		}
-
-		// Compare
-		assertTrue("R2RML test failed: " + directory,
-			ref.isEqualTo(result));
+		conn = getNewConnection(parameters);
+		result = R2RMLProcessor.convertDatabase(conn,
+			r2rml_def_file.getAbsolutePath(), baseURI, driver);
 	    }
+	    catch (Exception e) {
+		if ((new File(mapped_filepath)).exists()) {
+		    e.printStackTrace();
+		    fail("R2RML error: " + directory);
+		}
+		else {
+		    log.info("[W3CTester:runR2RML] R2RML data was not valid");
+		}
+		return;
+	    }
+	    finally {
+		if (conn != null) {
+		    conn.close();
+		}
+	    }
+	    // Serialize result
+	    result.dumpRDF(directory + "/mapped" + r2rmlSuffix
+		    + "-db2triples.nq", RDFFormat.NQUADS);
+
+	    // Load ref
+	    SesameDataSet ref = new SesameDataSet();
+	    try {
+		ref.loadDataFromFile(mapped_filepath, RDFFormat.NQUADS);
+	    }
+	    catch (Exception e) {
+		e.printStackTrace();
+		fail("Unable to load ref " + mapped_filepath);
+		return;
+	    }
+
+	    // Compare
+	    assertTrue("R2RML test failed: " + directory, ref.isEqualTo(result));
 	}
     }
 

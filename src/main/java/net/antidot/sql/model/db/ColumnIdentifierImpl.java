@@ -22,7 +22,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Set;
 
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.type.SQLType;
 
 /**
@@ -61,16 +63,31 @@ public class ColumnIdentifierImpl implements ColumnIdentifier {
     public static ColumnIdentifier buildFromR2RMLConfigFile(String columnName) {
 	if (columnName == null)
 	    return null;
-	if (isDelimitedIdentifier(columnName)) {
-	    String internValue = extractValueFromDelimitedIdentifier(columnName);
-	    if (internValue.toLowerCase().equals(internValue)) {
-		return new ColumnIdentifierImpl(internValue, null);
+
+	// MySQL
+	DriverType currentDriver = R2RMLProcessor.getDriverType();
+	if (currentDriver.equals(DriverType.MysqlDriver)) {
+	    if (isDelimitedIdentifier(columnName)) {
+		String internValue = extractValueFromDelimitedIdentifier(columnName);
+		return new ColumnIdentifierImpl(internValue.toLowerCase(), null);
 	    }
-	    return new ColumnIdentifierImpl(columnName, null);
-	}
-	else {
 	    return new ColumnIdentifierImpl(columnName.toLowerCase(), null);
 	}
+	// PostgreSQL
+	else if (currentDriver.equals(DriverType.PostgreSQL)) {
+	    if (isDelimitedIdentifier(columnName)) {
+		String internValue = extractValueFromDelimitedIdentifier(columnName);
+		if (internValue.toLowerCase().equals(internValue)) {
+		    return new ColumnIdentifierImpl(internValue, null);
+		}
+		return new ColumnIdentifierImpl(columnName, null);
+	    }
+	    else {
+		return new ColumnIdentifierImpl(columnName.toLowerCase(), null);
+	    }
+	}
+	// Be optimist...
+	return new ColumnIdentifierImpl(columnName, null);
     }
 
     /**
@@ -87,38 +104,76 @@ public class ColumnIdentifierImpl implements ColumnIdentifier {
 	SQLType sqlType = SQLType.toSQLType(meta.getColumnType(index));
 
 	/*
-	 * Postgres: assume strings with only lowercase or "regular identifier"
+	 * MySQL: not case-sensitive.... No notion of regular or delimited
+	 * identifier
+	 */
+	DriverType currentDriver = R2RMLProcessor.getDriverType();
+	if (currentDriver.equals(DriverType.MysqlDriver)) {
+	    return new ColumnIdentifierImpl(columnLabel.toLowerCase(), sqlType);
+	}
+	/*
+	 * Postgres: assume strings with only lowercase are "regular identifier"
 	 * and strings with at least a non lowercase are "delimited identifier".
 	 */
-	if (columnLabel.toLowerCase().equals(columnLabel)) {
-	    return new ColumnIdentifierImpl(columnLabel, sqlType);
+	else if (currentDriver.equals(DriverType.PostgreSQL)) {
+	    if (columnLabel.toLowerCase().equals(columnLabel)) {
+		return new ColumnIdentifierImpl(columnLabel, sqlType);
+	    }
+	    else {
+		return new ColumnIdentifierImpl("\"" + columnLabel + "\"",
+			sqlType);
+	    }
 	}
-	else {
-	    return new ColumnIdentifierImpl("\"" + columnLabel + "\"", sqlType);
-	}
+	// Be optimist...
+	return new ColumnIdentifierImpl(columnLabel, sqlType);
     }
 
     public String replaceAll(String input, String replaceValue) {
+	// Try simple replace...
 	String localResult = input.replaceAll("\\{" + columnName + "\\}",
 		replaceValue);
-	// Hack for Postgres where "\"toto\"" is the same than "toto"
-	if (localResult.equals(input)
-		&& columnName.toLowerCase().equals(columnName)) {
-	    localResult = input.replaceAll("\\{\"" + columnName + "\"\\}",
-		    replaceValue);
-	}
-	// Search "columnName" not case-sensitive
-	if (localResult.equals(input) && !isDelimitedIdentifier(columnName)) {
-	    Set<String> tokens = R2RMLToolkit
-		    .extractColumnNamesFromStringTemplate(input);
-	    for (String token : tokens) {
-		if(token.toLowerCase().equals(columnName)) {
-		    localResult = input.replaceAll("\\{" + token + "\\}",
-			    replaceValue);
-		    break;
+
+	// MySQL
+	// "ID" in template have to match ID column name.
+	DriverType currentDriver = R2RMLProcessor.getDriverType();
+	if (currentDriver.equals(DriverType.MysqlDriver)) {
+	    if (localResult.equals(input)) {
+		Set<String> tokens = R2RMLToolkit
+			.extractColumnNamesFromStringTemplate(input);
+		for (String token : tokens) {
+		    String lowerToken = token.toLowerCase();
+		    if ((isDelimitedIdentifier(token) && extractValueFromDelimitedIdentifier(
+			    lowerToken).equals(columnName))
+			    || lowerToken.equals(columnName)) {
+			localResult = input.replaceAll("\\{" + token + "\\}",
+				replaceValue);
+			break;
+		    }
 		}
 	    }
 	}
+	// Postgres
+	// "\"toto\"" is the same than "toto"
+	else if (currentDriver.equals(DriverType.PostgreSQL)) {
+	    if (localResult.equals(input)
+		    && columnName.toLowerCase().equals(columnName)) {
+		localResult = input.replaceAll("\\{\"" + columnName + "\"\\}",
+			replaceValue);
+	    }
+	    // Search "columnName" not case-sensitive
+	    if (localResult.equals(input) && !isDelimitedIdentifier(columnName)) {
+		Set<String> tokens = R2RMLToolkit
+			.extractColumnNamesFromStringTemplate(input);
+		for (String token : tokens) {
+		    if (token.toLowerCase().equals(columnName)) {
+			localResult = input.replaceAll("\\{" + token + "\\}",
+				replaceValue);
+			break;
+		    }
+		}
+	    }
+	}
+
 	// Must have replaced something
 	assert !localResult.equals(input) : ("Impossible to replace "
 		+ columnName + " in " + input);

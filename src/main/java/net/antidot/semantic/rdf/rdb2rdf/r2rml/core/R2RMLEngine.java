@@ -55,6 +55,7 @@ import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TermType;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.model.TriplesMap;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDType;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.db.ColumnIdentifier;
 import net.antidot.sql.model.db.ColumnIdentifierImpl;
 import net.antidot.sql.model.tools.SQLToolkit;
@@ -693,10 +694,19 @@ public class R2RMLEngine {
 		    boolean found = false;
 		    for (i = 1; i <= n; i++) {
 			ColumnIdentifier cId = ColumnIdentifierImpl.buildFromJDBCResultSet(metaData, i);
+			log.debug("[R2RMLEngine:applyValueToRow] Test column : " + cId);
 			if(cId.equals(column)) {
-				log.debug("[R2RMLEngine:applyValueToRow] Value found : "
-					+ rows.getString(i));
-				result.put(cId, rows.getBytes(i));
+				log.debug("[R2RMLEngine:applyValueToRow] Value found : \""
+					+ rows.getString(i) +"\" (Type: "+cId.getSqlType()+")");
+				byte[] rawData = rows.getBytes(i);
+				
+				// http://bugs.mysql.com/bug.php?id=65943
+				if(rawData != null &&
+					R2RMLProcessor.getDriverType().equals(DriverType.MysqlDriver) &&
+					cId.getSqlType() == SQLType.CHAR) {
+				    rawData = rows.getString(i).getBytes();
+				}
+				result.put(cId, rawData);
 				found = true;
 				break;
 			}

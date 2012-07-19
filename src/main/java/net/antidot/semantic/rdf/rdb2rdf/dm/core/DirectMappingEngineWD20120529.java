@@ -39,10 +39,11 @@ import net.antidot.semantic.rdf.model.impl.sesame.SemiStatement;
 import net.antidot.semantic.rdf.model.tools.RDFDataValidator;
 import net.antidot.semantic.rdf.rdb2rdf.commons.RDFPrefixes;
 import net.antidot.semantic.rdf.rdb2rdf.commons.SQLToXMLS;
+import net.antidot.semantic.rdf.rdb2rdf.r2rml.core.R2RMLProcessor;
 import net.antidot.semantic.rdf.rdb2rdf.r2rml.tools.R2RMLToolkit;
 import net.antidot.semantic.xmls.xsd.XSDLexicalTransformation;
 import net.antidot.semantic.xmls.xsd.XSDType;
-import net.antidot.sql.model.core.SQLConnector;
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.db.CandidateKey;
 import net.antidot.sql.model.db.ForeignKey;
 import net.antidot.sql.model.db.Key;
@@ -105,7 +106,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	 */
 	public Tuple extractTupleFrom(ResultSet valueSet, ResultSet headerSet,
 			ResultSet primaryKeysSet, ResultSet foreignKeysSet,
-			String tableName, String driver, String timeZone, int index)
+			String tableName, DriverType driver, String timeZone, int index)
 			throws UnsupportedEncodingException {
 		if (tableName != currentTableName)
 			// First table treatment
@@ -146,7 +147,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	 */
 	public Tuple extractReferencedTupleFrom(ResultSet valueSet,
 			ResultSet headerSet, ResultSet primaryKeysSet,
-			ResultSet foreignKeysSet, String tableName, String driver,
+			ResultSet foreignKeysSet, String tableName, DriverType driver,
 			String timeZone, int index) throws UnsupportedEncodingException {
 		// Get datatypes
 		LinkedHashMap<String, String> referencedDatatypes = extractDatatypes(
@@ -190,7 +191,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	/*
 	 * Extract a row from values datasets and its model.
 	 */
-	private Row extractRow(String driver, StdHeader header, String tableName,
+	private Row extractRow(DriverType driver, StdHeader header, String tableName,
 			ResultSet valueSet, String timeZone, int index)
 			throws UnsupportedEncodingException {
 		TreeMap<String, byte[]> values = new TreeMap<String, byte[]>();
@@ -200,6 +201,14 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 				// SQLType type =
 				// SQLType.toSQLType(Integer.valueOf(header.getDatatypes().get(columnName)));
 				value = valueSet.getBytes(columnName);
+
+				// http://bugs.mysql.com/bug.php?id=65943
+				if(value != null && 
+					driver.equals(DriverType.MysqlDriver) &&
+					SQLType.toSQLType(valueSet.getMetaData().getColumnType(valueSet.findColumn(columnName))) == SQLType.CHAR) {
+				    value = valueSet.getString(columnName).getBytes();
+				}
+
 				values.put(columnName, value);
 			} catch (SQLException e) {
 				log.error("[DirectMappingEngine:extractRow] SQL Error during row extraction");
@@ -289,6 +298,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	private HashSet<ForeignKey> extractForeignKeys(ResultSet foreignKeysSet,
 			String tableName) {
 		// Extract foreign key
+	    	log.error("[DirectMappingEngine:extractForeignKeys] Extract Foreign Keys for : " + tableName);	    
 		HashSet<ForeignKey> foreignKeys = new HashSet<ForeignKey>();
 		String currentPkTableName = null;
 		ArrayList<String> pkColumnNames = new ArrayList<String>();
@@ -322,13 +332,13 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 				pkColumnNames.add(pkColumnName);
 				fkColumnNames.add(fkColumnName);
 			}
+			log.error("[DirectMappingEngine:extractForeignKeys] Store now last foreign key");
 			// Store last key
 			storeForeignKey(foreignKeys, fkColumnNames, pkColumnNames,
 					tableName, currentPkTableName);
 
 		} catch (SQLException e) {
-			if (log.isErrorEnabled())
-				log.error("[DirectMappingEngine:extractForeignKeys] SQL Error during foreign keys of tuples extraction");
+		    	log.error("[DirectMappingEngine:extractForeignKeys] SQL Error during foreign keys of tuples extraction");
 			e.printStackTrace();
 		}
 		return foreignKeys;
@@ -352,7 +362,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	 * Construct SQL Query from database sets in order to extract row from its
 	 * table.
 	 */
-	public String constructSQLQuery(String driver, ResultSet headersSet,
+	public String constructSQLQuery(DriverType driver, ResultSet headersSet,
 			String tableName) {
 		LinkedHashMap<String, String> datatypes = extractDatatypes(headersSet,
 				tableName);
@@ -376,17 +386,17 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 						+ header.getDatatypes().get(columnName)
 						+ " from column : " + columnName);
 			}
-			if (driver.equals(SQLConnector.mysqlDriver))
+			if (driver.equals(DriverType.MysqlDriver))
 				SQLQuery += "`" + columnName + "`";
 			else
-				SQLQuery += "\"" + columnName + "\"";
+			    	SQLQuery += "\"" + columnName + "\"";
 			if (i < header.getColumnNames().size())
 				SQLQuery += ", ";
 		}
-		if (driver.equals(SQLConnector.mysqlDriver))
+		if (driver.equals(DriverType.MysqlDriver))
 			SQLQuery += " FROM `" + tableName + "`;";
 		else
-			SQLQuery += " FROM \"" + tableName + "\";";
+		    	SQLQuery += " FROM \"" + tableName + "\";";
 		return SQLQuery;
 	}
 
@@ -394,7 +404,7 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 	 * Construct SQL Query from database sets in order to extract row from its
 	 * table.
 	 */
-	public String constructReferencedSQLQuery(String driver,
+	public String constructReferencedSQLQuery(DriverType driver,
 			ResultSet headersSet, String tableName, Key key, Tuple tuple) {
 		// Explicit conversion
 		ForeignKey fk = (ForeignKey) key;
@@ -423,35 +433,34 @@ public class DirectMappingEngineWD20120529 implements DirectMappingEngine {
 							+ header.getDatatypes().get(columnName)
 							+ " from column : " + columnName);
 			}
-			if (driver.equals(SQLConnector.mysqlDriver))
+			if (driver.equals(DriverType.MysqlDriver))
 				SQLQuery += "`" + columnName + "`";
 			else
-				SQLQuery += "\"" + columnName + "\"";
+			    	SQLQuery += "\"" + columnName + "\"";
 			if (i < header.getColumnNames().size())
 				SQLQuery += ", ";
 		}
-		if (driver.equals(SQLConnector.mysqlDriver))
+		if (driver.equals(DriverType.MysqlDriver))
 			SQLQuery += " FROM `" + tableName + "`";
 		else
-			SQLQuery += " FROM \"" + tableName + "\"";
+		    	SQLQuery += " FROM \"" + tableName + "\"";
 		// WHERE clause
 		SQLQuery += " WHERE ";
 		int j = 0;
 		ArrayList<String> columnNames = fk.getReferenceKey().getColumnNames();
 		for (String columnName : columnNames) {
+		    	String finalColumnName = "\"" + columnName + "\"";
+			if (driver.equals(DriverType.MysqlDriver)) {
+			    finalColumnName = "`" + columnName + "`";
+			}
+
 			final byte[] bs = r.getValues().get(fk.getColumnNames().get(j));
 			if (bs == null) {
 				// Always use IS NULL to look for NULL values.
-				if (driver.equals(SQLConnector.mysqlDriver))
-					SQLQuery += "`" + columnName + "` IS NULL";
-				else
-					SQLQuery += "\"" + columnName + "\" IS NULL";
+			    SQLQuery += finalColumnName + " IS NULL";
 			} else {
 			    String value = new String(bs);
-			    if (driver.equals(SQLConnector.mysqlDriver))
-					SQLQuery += "`" + columnName + "` = '" + value + "'";
-				else
-					SQLQuery += "\"" + columnName + "\" = '" + value + "'";
+			    SQLQuery += finalColumnName + " = '" + value + "'";
 			}
 				
 			j++;

@@ -33,6 +33,7 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import net.antidot.sql.model.core.DriverType;
 import net.antidot.sql.model.db.Key;
 import net.antidot.sql.model.db.Tuple;
 
@@ -75,7 +76,7 @@ public interface DirectMappingEngine {
 	 */
 	public Tuple extractTupleFrom(ResultSet values, ResultSet headers,
 			ResultSet primaryKeys, ResultSet foreignKeys, String tableName,
-			String driver, String timeZone, int index) throws UnsupportedEncodingException;
+			DriverType driver, String timeZone, int index) throws UnsupportedEncodingException;
 
 	/**
 	 * Extract a generic referenced tuple from generic JDBC sets.
@@ -92,7 +93,7 @@ public interface DirectMappingEngine {
 	 */
 	public Tuple extractReferencedTupleFrom(ResultSet values,
 			ResultSet headers, ResultSet primaryKeys, ResultSet foreignKeys,
-			String tableName, String driver, String timeZone, int index) throws UnsupportedEncodingException;
+			String tableName, DriverType driver, String timeZone, int index) throws UnsupportedEncodingException;
 
 	/**
 	 * Construct the SQL Query depending on current norm used for construct tuples.
@@ -101,7 +102,7 @@ public interface DirectMappingEngine {
 	 * @param tableName
 	 * @return
 	 */
-	public String constructSQLQuery(String driver, ResultSet headersSet,
+	public String constructSQLQuery(DriverType driver, ResultSet headersSet,
 			String tableName);
 	
 	/**
@@ -112,7 +113,7 @@ public interface DirectMappingEngine {
 	 * @return
 	 * @throws UnsupportedEncodingException 
 	 */
-	public String constructReferencedSQLQuery(String driver,
+	public String constructReferencedSQLQuery(DriverType driver,
 			ResultSet headersSet, String tableName, Key key, Tuple tuple) throws UnsupportedEncodingException;
 
 	/**
