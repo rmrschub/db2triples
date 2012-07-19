@@ -3,16 +3,10 @@ LGPL Licence
 https://github.com/antidot/db2triples
 http://www.antidot.net
 
-References : W3C Working Drafts 24 March 2011
-- R2RML: RDB to RDF Mapping Language (http://www.w3.org/TR/2011/WD-r2rml-20110324/)
-- A Direct Mapping of Relational Data to RDF (http://www.w3.org/TR/2011/WD-rdb-direct-mapping-20110324/)
+References : W3C Working Drafts 29 May 2012
+- R2RML: RDB to RDF Mapping Language (http://www.w3.org/TR/2012/WD-r2rml-20120529/)
+- A Direct Mapping of Relational Data to RDF (http://www.w3.org/TR/2012/WD-rdb-direct-mapping-20120529/)
 
-
-Roadmap:
-========
-- Include support for last calls
-- Include support for cursor-based retrieval (improve memory use)
-Target date: Q1 2012
 
 Using the library
 =================
@@ -26,10 +20,14 @@ https://github.com/antidot/db2triples/
 
 ** Needed dependency **
 
-OpenRdf Sesame > 2.5.x - http://www.openrdf.org/
+OpenRdf Sesame > 2.6.x - http://www.openrdf.org/
 Commons-cli > 1.2 - http://commons.apache.org/cli/
 Commons-logging > 1.1.1 - http://commons.apache.org/logging/
+
+** Tested JDBC connectors **
+
 MySQL Connector > 5.1.15 - http://www.mysql.com/downloads/connector/j/ 
+PostgreSQL Connector > 9.1-901 - http://jdbc.postgresql.org/
 
 ** Command line **
 
