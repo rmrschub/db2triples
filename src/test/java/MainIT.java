@@ -237,7 +237,7 @@ public class MainIT extends TestCase {
 	    try {
 		String parameters = "";
 		if (driver.equals(DriverType.MysqlDriver)) {
-		    parameters = "?padCharsWithSpace=true";
+		    parameters = "?padCharsWithSpace=true&sessionVariables=sql_mode='ANSI',storage_engine=InnoDB";
 		}
 		conn = getNewConnection(parameters);
 		result = R2RMLProcessor.convertDatabase(conn,
