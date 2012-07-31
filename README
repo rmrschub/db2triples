@@ -34,12 +34,8 @@ PostgreSQL Connector > 9.1-901 - http://jdbc.postgresql.org/
 According your classpath has the links to all the preceding jars and the 
 "db2triples-<version number>.jar", you can launch the lib as follow :
 
-- To call DirectMapping :
-java antidot.dm.main.DirectMapping
-
-- To call R2RML :
-java antidot.r2rml.main.R2RML
-
+- To call Db2triples :
+net.antidot.semantic.rdf.rdb2rdf.main.Db2triples
 
 Building your own jar
 =====================
