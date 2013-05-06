@@ -16,12 +16,14 @@ import net.antidot.sql.model.core.SQLConnector;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.openrdf.rio.RDFFormat;
 
+@Ignore
 @RunWith(Parameterized.class)
 public class MainIT extends TestCase {
 
