@@ -60,8 +60,7 @@ public class Db2triples {
 	private static Option modeOpt = OptionBuilder
 			.withArgName("mode")
 			.hasArg()
-			.withDescription(
-					"Mandatory conversion mode, 'r2rml' for R2RML and 'dm' for Direct Mapping")
+			.withDescription("Mandatory conversion mode, 'r2rml' for R2RML and 'dm' for Direct Mapping")
 			.withLongOpt("mode").create("m");
 
 	private static Option userNameOpt = OptionBuilder.withArgName("user_name")
@@ -86,8 +85,7 @@ public class Db2triples {
 	private static Option versionOpt = OptionBuilder
 			.withArgName("version")
 			.hasArg()
-			.withDescription(
-					"Version of norm to use (1 = Working Draft 20 September 2011 (default), 2 = Working Draft 23 March 2011)")
+			.withDescription("Version of norm to use (1 = Working Draft 20 September 2011 (default), 2 = Working Draft 23 March 2011)")
 			.withLongOpt("version").create("v");
 
 	private static Option dbOpt = OptionBuilder.withArgName("database_name")
@@ -122,21 +120,18 @@ public class Db2triples {
 	private static Option transformOutputFile = OptionBuilder
 			.withArgName("sparql_output")
 			.hasArg()
-			.withDescription(
-					"Transformed graph output file (optionnal if sparql option is not specified, default : sparql_output otherwise)")
+			.withDescription("Transformed graph output file (optionnal if sparql option is not specified, default : sparql_output otherwise)")
 			.withLongOpt("sparql_output").create("q");
 
 	private static Option rdfFormat = OptionBuilder
 			.withArgName("format")
 			.hasArg()
-			.withDescription(
-					"RDF syntax output format ('RDFXML', 'N3', 'NTRIPLES' or 'TURTLE')")
+			.withDescription("RDF syntax output format ('RDFXML', 'N3', 'NTRIPLES' or 'TURTLE')")
 			.withLongOpt("format").create("t");
 	private static Option r2rmlFileOpt = OptionBuilder
 			.withArgName("r2rml_file")
 			.hasArg()
-			.withDescription(
-					"R2RML config file used to convert relationnal database into RDF terms.")
+			.withDescription("R2RML config file used to convert relationnal database into RDF terms.")
 			.withLongOpt("r2rml_file").create("r");
 
 	private static String projectName = "db2triples v1.0 - See https://github.com/antidot/db2triples for more informations.";
@@ -231,8 +226,7 @@ public class Db2triples {
 			} else {
 				mode = line.getOptionValue("mode");
 				if (!mode.equals("r2rml") && !mode.equals("dm")) {
-					log
-							.error("Unkonw mode. Please select 'r2rml' or 'dm' mode.");
+					log.error("Unkonw mode. Please select 'r2rml' or 'dm' mode.");
 					HelpFormatter formatter = new HelpFormatter();
 					formatter.printHelp(projectName, options);
 					System.exit(-1);
@@ -246,8 +240,7 @@ public class Db2triples {
 				if (mode.equals("r2rml")) {
 					formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
 				} else {
-					formatter
-							.printHelp(projectNameDirectMappingMode, dmOptions);
+					formatter.printHelp(projectNameDirectMappingMode, dmOptions);
 				}
 				System.exit(-1);
 			} else {
@@ -261,8 +254,7 @@ public class Db2triples {
 				if (mode.equals("r2rml")) {
 					formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
 				} else {
-					formatter
-							.printHelp(projectNameDirectMappingMode, dmOptions);
+					formatter.printHelp(projectNameDirectMappingMode, dmOptions);
 				}
 				System.exit(-1);
 			} else {
@@ -275,14 +267,12 @@ public class Db2triples {
 			// Database name
 			if (!line.hasOption("database")) {
 				// automatically generate the help statement
-					log
-							.error("Database name is required. Use -b option to set it.");
+				log.error("Database name is required. Use -b option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
 				if (mode.equals("r2rml")) {
 					formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
 				} else {
-					formatter
-							.printHelp(projectNameDirectMappingMode, dmOptions);
+					formatter.printHelp(projectNameDirectMappingMode, dmOptions);
 				}
 				System.exit(-1);
 			} else {
@@ -295,14 +285,12 @@ public class Db2triples {
 			// Name of native store
 			if (useNativeStore && !line.hasOption("native_output")) {
 				// automatically generate the help statement
-				log
-						.error("Native triplestore path is required. Use -n option to set it.");
+				log.error("Native triplestore path is required. Use -n option to set it.");
 				HelpFormatter formatter = new HelpFormatter();
 				if (mode.equals("r2rml")) {
 					formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
 				} else {
-					formatter
-							.printHelp(projectNameDirectMappingMode, dmOptions);
+					formatter.printHelp(projectNameDirectMappingMode, dmOptions);
 				}
 				System.exit(-1);
 			} else {
@@ -315,8 +303,7 @@ public class Db2triples {
 			// SPARQL transformation
 			if (line.hasOption("sparql")) {
 				if (!mode.equals("dm")) {
-					log
-							.warn("sparql option is required only for 'dm' mode : it will be ignored...");
+					log.warn("sparql option is required only for 'dm' mode : it will be ignored...");
 				} else {
 					sparql = line.getOptionValue("sparql");
 					sparqlOutput = line.getOptionValue("sparql_output",
@@ -371,8 +358,7 @@ public class Db2triples {
 			// r2rml instance
 			if (mode.equals("r2rml")) {
 				if (!line.hasOption("r2rml_file")) {
-					log
-					.error("R2RML config file is required. Use -r option to set it.");
+					log.error("R2RML config file is required. Use -r option to set it.");
 					// automatically generate the help statement
 					HelpFormatter formatter = new HelpFormatter();
 					formatter.printHelp(projectNameR2RMLMode, r2rmlOptions);
@@ -398,8 +384,7 @@ public class Db2triples {
 		Connection conn = null;
 		try {
 			// Connect database
-			conn = SQLConnector
-					.connect(userName, password, url, driver, dbName);
+			conn = SQLConnector.connect(userName, password, url, driver, dbName);
 
 			// Generate RDF graph
 			SesameDataSet g = null;
@@ -407,10 +392,9 @@ public class Db2triples {
 			if (useNativeStore) {
 				File pathToNativeOutputDir = new File(nativeOutput);
 				if (pathToNativeOutputDir.exists() && !forceExistingRep) {
-						log
-								.error("Directory "
-										+ pathToNativeOutputDir
-										+ "  already exists. Use -f option to force loading of existing repository.");
+						log.error("Directory "
+							+ pathToNativeOutputDir
+							+ "  already exists. Use -f option to force loading of existing repository.");
 					System.exit(-1);
 				}
 				// Extract database model according to convert mode
@@ -423,10 +407,9 @@ public class Db2triples {
 			} else {
 				File outputFile = new File(output);
 				if (outputFile.exists() && !forceExistingRep) {
-						log
-								.error("Output file "
-										+ outputFile.getAbsolutePath()
-										+ " already exists. Please remove it or modify ouput name option.");
+						log.error("Output file "
+							+ outputFile.getAbsolutePath()
+							+ " already exists. Please remove it or modify ouput name option.");
 					System.exit(-1);
 				}
 				// Extract database model
