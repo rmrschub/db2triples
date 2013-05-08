@@ -110,8 +110,10 @@ public class MainIT extends TestCase {
 	    InstantiationException, IllegalAccessException,
 	    ClassNotFoundException {
 	log.info("[W3CTester:getNewConnection] Create new DB connection");
-	return SQLConnector.connect(userName, password, url, driver,
-		Settings.testDbName + parameter);
+	return SQLConnector.connect(userName,
+				    password,
+				    url + Settings.testDbName + parameter,
+				    driver);
     }
 
     // @Test

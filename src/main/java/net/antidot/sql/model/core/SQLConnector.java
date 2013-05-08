@@ -65,6 +65,7 @@ public abstract class SQLConnector {
 	 * @throws IllegalAccessException
 	 * @throws ClassNotFoundException
 	 */
+	@Deprecated
 	static public Connection connect(String userName, String password,
 			String url, DriverType driver, String database) throws SQLException,
 			InstantiationException, IllegalAccessException,
@@ -77,7 +78,17 @@ public abstract class SQLConnector {
 		return conn;
 	}
 
-	
+	static public Connection connect(String userName, String password,
+		String fullurl, DriverType driver) throws SQLException,
+		InstantiationException, IllegalAccessException,
+		ClassNotFoundException {
+	log.info("[SQLConnection:extractDatabase] Try to connect " + fullurl + " with " + driver);
+	Class.forName(driver.getDriverName()).newInstance();
+	Connection conn = DriverManager.getConnection(fullurl, userName,
+			password);
+	log.info("[SQLConnection:extractDatabase] Database connection established.");
+	return conn;
+}	
 
 	/**
 	 * Update a database, connected with c, with requests in SQL file.

@@ -384,7 +384,7 @@ public class Db2triples {
 		Connection conn = null;
 		try {
 			// Connect database
-			conn = SQLConnector.connect(userName, password, url, driver, dbName);
+			conn = SQLConnector.connect(userName, password, url + dbName, driver);
 
 			// Generate RDF graph
 			SesameDataSet g = null;
