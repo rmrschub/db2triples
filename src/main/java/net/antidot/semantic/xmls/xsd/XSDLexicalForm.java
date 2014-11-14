@@ -109,9 +109,7 @@ public class XSDLexicalForm {
 				absValue /= 10;
 			}
 		}
-		// Keep 3 decimals
-		Double roundValue =  myRound(absValue,3);
-		String result = minus + roundValue + "E" + exponent;
+		String result = minus + absValue + "E" + exponent;
 		return result;
 	}
 
@@ -124,13 +122,6 @@ public class XSDLexicalForm {
 		return result.toString();
 	}
 	
-    private static double myRound(double value, int decimalPlaces)
-    {
-        if(decimalPlaces < 0) { return value; }
-        double augmentation = Math.pow(10, decimalPlaces);
-        return Math.round(value * augmentation) / augmentation;
-    }
-
 	private static String getDecimalCanonicalLexicalForm(
 			String nonCanonicalLexicalForm) {
 		Float result = Float.valueOf(nonCanonicalLexicalForm);
