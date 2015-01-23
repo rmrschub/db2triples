@@ -28,6 +28,8 @@
  ****************************************************************************/
 package net.antidot.semantic.xmls.xsd;
 
+import java.math.BigDecimal;
+
 public class XSDLexicalForm {
 	
 	public static String getCanonicalLexicalForm(
@@ -124,8 +126,8 @@ public class XSDLexicalForm {
 	
 	private static String getDecimalCanonicalLexicalForm(
 			String nonCanonicalLexicalForm) {
-		Float result = Float.valueOf(nonCanonicalLexicalForm);
-		if (Math.round(result) == result)
+		BigDecimal result = new BigDecimal(nonCanonicalLexicalForm);
+		if (result.signum() == 0 || result.scale() <= 0 || result.stripTrailingZeros().scale() <= 0)
 			return Integer.toString(result.intValue());
 		else
 			return result.toString();
